@@ -12,6 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Ngrok and production reverse proxies terminate HTTPS before the
+        // request reaches Laravel. Trust their forwarded scheme so generated
+        // asset URLs remain HTTPS and are not blocked as mixed content.
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
         ]);

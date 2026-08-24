@@ -28,12 +28,20 @@
                 </tr></thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                     @forelse ($programs as $program)
+                        @php
+                            $statusClass = match ($program->status) {
+                                'active' => 'bg-success-50 text-success-700 dark:bg-success-500/15 dark:text-success-400',
+                                'completed' => 'bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300',
+                                'cancelled' => 'bg-error-50 text-error-700 dark:bg-error-500/15 dark:text-error-400',
+                                default => 'bg-warning-50 text-warning-700 dark:bg-warning-500/15 dark:text-warning-400',
+                            };
+                        @endphp
                         <tr>
                             <td class="px-5 py-4"><div class="font-medium text-gray-800 dark:text-white/90">{{ $program->name }}</div></td>
                             <td class="px-5 py-4 text-sm text-gray-500 dark:text-gray-400">{{ $program->starts_at?->format('d M Y H:i') ?? '-' }}<br>{{ $program->ends_at?->format('d M Y H:i') ?? '-' }}</td>
                             <td class="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">{{ $program->simulations_count }}</td>
                             <td class="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">{{ $program->participants_count }}</td>
-                            <td class="px-5 py-4"><span class="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-600 dark:bg-brand-500/15 dark:text-brand-400">{{ ucfirst($program->status) }}</span></td>
+                            <td class="px-5 py-4"><span class="rounded-full px-2.5 py-1 text-xs font-medium {{ $statusClass }}">{{ ucfirst($program->status) }}</span></td>
                             <td class="px-5 py-4"><div class="crud-actions"><a href="{{ route('admin.assessment-programs.setup.edit', $program) }}" class="crud-btn-soft-brand">Atur</a><a href="{{ route('admin.assessment-programs.edit', $program) }}" class="crud-btn-soft-neutral">Edit</a><button type="button" @click="deleting = { name: @js($program->name), action: @js(route('admin.assessment-programs.destroy', $program)) }" class="crud-btn-soft-danger">Hapus</button></div></td>
                         </tr>
                     @empty

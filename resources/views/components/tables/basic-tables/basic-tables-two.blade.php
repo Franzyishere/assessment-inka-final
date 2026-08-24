@@ -7,7 +7,7 @@
             customerEmail: 'johndoe@gmail.com',
             initials: 'JD',
             avatarBg: 'bg-blue-100',
-            avatarColor: 'text-blue-500',
+            avatarColor: 'text-brand-500',
             product: 'Software License',
             value: '$18,50.34',
             closeDate: '2024-06-15',
@@ -131,7 +131,7 @@
                             <div class="flex items-center gap-3">
                                 <div @click="handleSelectAll()"
                                     class="flex h-5 w-5 cursor-pointer items-center justify-center rounded-md border-[1.25px]"
-                                    :class="selectAll ? 'border-blue-500 dark:border-blue-500 bg-blue-500' : 'bg-white dark:bg-white/0 border-gray-300 dark:border-gray-700'">
+                                    :class="selectAll ? 'border-brand-500 dark:border-brand-500 bg-brand-500' : 'bg-white dark:bg-white/0 border-gray-300 dark:border-gray-700'">
                                     <svg :class="selectAll ? 'block' : 'hidden'" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <path d="M11.6668 3.5L5.25016 9.91667L2.3335 7" stroke="white" stroke-width="1.94437" stroke-linecap="round" stroke-linejoin="round"/>
                                     </svg>
@@ -154,7 +154,7 @@
                                 <div class="flex items-center gap-3">
                                     <div @click="handleRowSelect(row.id)"
                                         class="flex h-5 w-5 cursor-pointer items-center justify-center rounded-md border-[1.25px]"
-                                        :class="selectedRows.includes(row.id) ? 'border-blue-500 dark:border-blue-500 bg-blue-500' : 'bg-white dark:bg-white/0 border-gray-300 dark:border-gray-700'">
+                                        :class="selectedRows.includes(row.id) ? 'border-brand-500 dark:border-brand-500 bg-brand-500' : 'bg-white dark:bg-white/0 border-gray-300 dark:border-gray-700'">
                                         <svg :class="selectedRows.includes(row.id) ? 'block' : 'hidden'" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                                             <path d="M11.6668 3.5L5.25016 9.91667L2.3335 7" stroke="white" stroke-width="1.94437" stroke-linecap="round" stroke-linejoin="round"/>
                                         </svg>

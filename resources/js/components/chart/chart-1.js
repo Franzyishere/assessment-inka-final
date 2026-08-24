@@ -9,7 +9,7 @@ export const initChartOne = () => {
             name: "Sales",
             data: [168, 385, 201, 298, 187, 195, 291, 110, 215, 390, 280, 112],
         },],
-        colors: ["#465fff"],
+        colors: ["#e21a29"],
         chart: {
             fontFamily: "Outfit, sans-serif",
             type: "bar",

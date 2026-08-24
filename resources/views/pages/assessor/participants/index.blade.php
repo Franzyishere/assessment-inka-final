@@ -16,7 +16,7 @@
                     @forelse($program->participants as $participant)
                         <tr>
                             <td class="px-5 py-4"><div class="text-sm font-medium text-gray-800 dark:text-white/90">{{ $participant->user->name }}</div><div class="text-xs text-gray-500">{{ $participant->user->email }}</div></td>
-                            <td class="px-5 py-4"><span class="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-600 dark:bg-brand-500/15 dark:text-brand-400">{{ ucfirst($participant->status) }}</span></td>
+                            <td class="px-5 py-4"><span class="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 dark:bg-white/10 dark:text-gray-300">{{ ucfirst($participant->status) }}</span></td>
                             <td class="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">{{ $participant->started_sessions_count }} / {{ $participant->assigned_simulations_count }} dimulai</td>
                             <td class="px-5 py-4 text-sm font-medium text-gray-800 dark:text-white/90">{{ $participant->submitted_sessions_count }} / {{ $participant->assigned_simulations_count }}</td>
                         </tr>

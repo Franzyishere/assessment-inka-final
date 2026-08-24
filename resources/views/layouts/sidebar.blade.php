@@ -61,13 +61,13 @@
     @mouseenter="if (!$store.sidebar.isExpanded) $store.sidebar.setHovered(true)"
     @mouseleave="$store.sidebar.setHovered(false)">
     <!-- Logo Section -->
-    <div class="pt-3 pb-3 flex"
+    <div class="mb-3 flex border-b border-gray-100 pb-4 pt-3 dark:border-gray-800"
         :class="(!$store.sidebar.isExpanded && !$store.sidebar.isHovered && !$store.sidebar.isMobileOpen) ?
         'xl:justify-center' :
         'justify-start'">
         <a href="/" class="flex items-center">
             <img x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen"
-                src="{{ asset('images/logo/logo-inka-sidebar.png') }}" alt="INKA" class="h-auto w-[180px] object-contain" />
+                src="{{ asset('images/logo/logo-inka-sidebar.png') }}" alt="INKA" class="h-auto w-[170px] object-contain" />
             <img x-show="!$store.sidebar.isExpanded && !$store.sidebar.isHovered && !$store.sidebar.isMobileOpen"
                 src="{{ asset('images/logo/logo-inka-sidebar.png') }}" alt="INKA" class="h-auto w-12 object-contain" />
 
@@ -215,11 +215,6 @@
                 @endforeach
             </div>
         </nav>
-
-        <!-- Sidebar Widget -->
-        <div x-data x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen" x-transition class="mt-auto">
-            @include('layouts.sidebar-widget')
-        </div>
 
     </div>
 </aside>

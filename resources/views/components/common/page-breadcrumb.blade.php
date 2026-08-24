@@ -1,14 +1,15 @@
 @props(['pageTitle' => 'Page'])
 
-<div class="flex flex-wrap items-center justify-between gap-3 mb-6">
-    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">
+<div class="relative mb-6 flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-brand-700 via-brand-600 to-brand-500 px-5 py-4 shadow-theme-md sm:px-6">
+    <div class="pointer-events-none absolute -right-10 -top-16 size-40 rounded-full bg-white/10"></div>
+    <h2 class="relative text-xl font-semibold text-white">
         {{ $pageTitle }}
     </h2>
-    <nav>
+    <nav class="relative">
         <ol class="flex items-center gap-1.5">
             <li>
                 <a
-                    class="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400"
+                    class="inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white"
                     href="{{ url('/') }}"
                 >
                     Home
@@ -30,7 +31,7 @@
                     </svg>
                 </a>
             </li>
-            <li class="text-sm text-gray-800 dark:text-white/90">
+            <li class="text-sm font-medium text-white">
                 {{ $pageTitle }}
             </li>
         </ol>

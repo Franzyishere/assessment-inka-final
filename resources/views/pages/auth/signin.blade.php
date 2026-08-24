@@ -49,17 +49,12 @@
     <div class="bg-brand-950 absolute inset-y-0 right-0 hidden w-1/2 items-center justify-center lg:flex dark:bg-white/5">
         <x-common.common-grid-shape />
         <div class="z-1 flex max-w-sm flex-col items-center px-8 text-center">
-            <div class="mb-6 w-full rounded-2xl bg-white p-5 shadow-theme-lg">
-                <img src="{{ asset('images/logo/imagesinka-animated.svg') }}" alt="Assessment INKA" class="h-auto w-full max-w-[300px]" />
+            <div class="mb-6 flex min-h-[150px] w-full items-center justify-center rounded-2xl bg-white p-5 shadow-theme-lg">
+                <img src="{{ asset('images/logo/logo-inka-login-motion.svg') }}?v={{ filemtime(public_path('images/logo/logo-inka-login-motion.svg')) }}" alt="Logo PT INKA" class="h-auto w-full max-w-[360px]" />
             </div>
             <p class="text-gray-400 dark:text-white/60">Portal assessment internal dan rekrutmen PT INKA.</p>
         </div>
     </div>
 
-    <div class="fixed right-6 bottom-6 z-50">
-        <button type="button" class="bg-brand-500 hover:bg-brand-600 inline-flex size-14 items-center justify-center rounded-full text-white transition-colors" @click.prevent="$store.theme.toggle()">
-            <span class="text-lg" x-text="$store.theme.theme === 'dark' ? '☀' : '☾'"></span>
-        </button>
-    </div>
 </div>
 @endsection

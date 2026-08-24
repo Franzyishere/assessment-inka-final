@@ -1,5 +1,5 @@
 <header
-    class="sticky top-0 flex w-full bg-white border-gray-200 z-99999 dark:border-gray-800 dark:bg-gray-900 xl:border-b"
+    class="sticky top-0 z-99999 flex w-full border-t-4 border-brand-500 bg-white shadow-theme-xs dark:border-brand-600 dark:bg-gray-900 xl:border-b xl:border-x-0 xl:border-b-gray-200 dark:xl:border-b-gray-800"
     x-data="{
         isApplicationMenuOpen: false,
         toggleApplicationMenu() {
@@ -93,10 +93,9 @@
         <div :class="isApplicationMenuOpen ? 'flex' : 'hidden'"
             class="items-center justify-between w-full gap-4 px-5 py-4 xl:flex shadow-theme-md xl:justify-end xl:px-0 xl:shadow-none">
             <div class="flex items-center gap-2 2xsm:gap-3">
-                <!-- Theme Toggle Button -->
+                <!-- Theme toggle disabled: the INKA corporate interface is light-only. -->
                 <button
-                    class="relative flex items-center justify-center text-gray-500 transition-colors bg-white border border-gray-200 rounded-full hover:text-dark-900 h-11 w-11 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-                    @click="$store.theme.toggle()">
+                    type="button" hidden aria-hidden="true" tabindex="-1">
                     <svg class="hidden dark:block" width="20" height="20" viewBox="0 0 20 20" fill="none"
                         xmlns="http://www.w3.org/2000/svg">
                         <path fill-rule="evenodd" clip-rule="evenodd"
