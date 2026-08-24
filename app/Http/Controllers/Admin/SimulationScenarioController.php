@@ -1,0 +1,128 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreSimulationScenarioRequest;
+use App\Http\Requests\Admin\UpdateSimulationScenarioRequest;
+use App\Models\AssessmentParticipant;
+use App\Models\SimulationScenario;
+use App\Models\SimulationType;
+use App\Support\SimulationCatalog;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+
+class SimulationScenarioController extends Controller
+{
+    public function index(Request $request): View
+    {
+        $scenarios = SimulationCatalog::ensure($request->user()->id);
+        $scenarios->each->load('materialPages');
+
+        return view('pages.admin.simulations.index', [
+            'title' => 'Bank Simulasi',
+            'simulationGroups' => $scenarios->groupBy('simulation_type_id'),
+            'simulationTypes' => SimulationType::query()->where('is_active', true)->orderBy('sequence')->get(),
+            'assessmentCategories' => AssessmentParticipant::CATEGORIES,
+        ]);
+    }
+
+    public function edit(SimulationScenario $simulationScenario): View
+    {
+        $simulationScenario->load('materialPages');
+
+        return view('pages.admin.simulations.edit', [
+            'title' => 'Edit Simulasi',
+            'scenario' => $simulationScenario,
+            'simulationTypes' => SimulationType::query()->where('is_active', true)->orderBy('sequence')->get(),
+            'assessmentCategories' => AssessmentParticipant::CATEGORIES,
+        ]);
+    }
+
+    public function update(UpdateSimulationScenarioRequest $request, SimulationScenario $simulationScenario): RedirectResponse
+    {
+        DB::transaction(function () use ($request, $simulationScenario) {
+            $data = $request->safe()->except('material_pages');
+            $type = $simulationScenario->type;
+            $this->validatePdfMaterials($request, $type, $simulationScenario);
+            $simulationScenario->update([
+                'description' => $data['description'] ?? null,
+                'duration_minutes' => $data['duration_minutes'] ?? null,
+                'title' => $type->name,
+                'status' => 'active',
+            ]);
+            $this->syncMaterialPages($request, $simulationScenario, $request->validated('material_pages', []));
+        });
+
+        return to_route('admin.simulations.index')->with('success', 'Simulasi berhasil diperbarui.');
+    }
+
+    private function syncMaterialPages(StoreSimulationScenarioRequest $request, SimulationScenario $scenario, array $pages): void
+    {
+        $retainedIds = [];
+
+        foreach (array_values($pages) as $index => $page) {
+            $attributes = [
+                'title' => $page['title'] ?: 'Materi '.($index + 1),
+                'content' => $page['content'] ?? null,
+                'page_order' => $index + 1,
+                'is_required' => (bool) ($page['is_required'] ?? true),
+            ];
+            $file = $request->file("material_pages.{$index}.attachment");
+            $existing = isset($page['id']) ? $scenario->materialPages()->find($page['id']) : null;
+            if ($file) {
+                if ($existing?->attachment_path) {
+                    Storage::disk('local')->delete($existing->attachment_path);
+                }
+                $path = $file->storeAs('simulation-materials/'.$scenario->id, Str::uuid().'.pdf', 'local');
+                $attributes += [
+                    'attachment_path' => $path,
+                    'attachment_name' => $file->getClientOriginalName(),
+                    'attachment_mime_type' => 'application/pdf',
+                    'attachment_size' => $file->getSize(),
+                ];
+            }
+
+            $materialPage = $scenario->materialPages()->updateOrCreate(
+                ['id' => $page['id'] ?? null],
+                $attributes,
+            );
+            $retainedIds[] = $materialPage->id;
+        }
+
+        $removed = $scenario->materialPages()->whereNotIn('id', $retainedIds)->get();
+        foreach ($removed as $material) {
+            if ($material->attachment_path) {
+                Storage::disk('local')->delete($material->attachment_path);
+            }
+            $material->delete();
+        }
+    }
+
+    private function validatePdfMaterials(StoreSimulationScenarioRequest $request, SimulationType $type, ?SimulationScenario $scenario = null): void
+    {
+        if (! in_array($type->delivery_mode, ['multi_page_response', 'case_response'], true)) {
+            return;
+        }
+
+        $pages = $request->validated('material_pages', []);
+        if ($type->delivery_mode === 'multi_page_response' && count($pages) !== 1) {
+            throw ValidationException::withMessages(['material_pages' => 'Simulasi 1 harus memiliki tepat satu materi PDF.']);
+        }
+        if ($type->delivery_mode === 'case_response' && count($pages) < 1) {
+            throw ValidationException::withMessages(['material_pages' => 'Simulasi 3 harus memiliki minimal satu materi PDF.']);
+        }
+
+        foreach (array_values($pages) as $index => $page) {
+            $hasExisting = ! empty($page['id']) && $scenario?->materialPages()->whereKey($page['id'])->whereNotNull('attachment_path')->exists();
+            if (! $request->hasFile("material_pages.{$index}.attachment") && ! $hasExisting) {
+                throw ValidationException::withMessages(["material_pages.{$index}.attachment" => 'File PDF materi wajib diunggah.']);
+            }
+        }
+    }
+}

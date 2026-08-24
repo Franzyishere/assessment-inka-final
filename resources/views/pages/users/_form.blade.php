@@ -1,0 +1,14 @@
+@php($editing = isset($managedUser))
+<form method="POST" action="{{ $formAction }}" class="space-y-6">@csrf @if($editing) @method('PUT') @endif
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 md:p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+        <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div><label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Nama Lengkap *</label><input name="name" value="{{ old('name', $managedUser->name ?? '') }}" required class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 dark:border-gray-700 dark:text-white/90">@error('name')<p class="mt-1 text-xs text-error-500">{{ $message }}</p>@enderror</div>
+            <div><label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Email *</label><input type="email" name="email" value="{{ old('email', $managedUser->email ?? '') }}" required class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 dark:border-gray-700 dark:text-white/90">@error('email')<p class="mt-1 text-xs text-error-500">{{ $message }}</p>@enderror</div>
+            @if(!empty($roles))<div><label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Role *</label><select name="role" required class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 dark:border-gray-700 dark:text-white/90">@foreach($roles as $value => $label)<option value="{{ $value }}" @selected(old('role', $managedUser->role ?? '') === $value)>{{ $label }}</option>@endforeach</select>@error('role')<p class="mt-1 text-xs text-error-500">{{ $message }}</p>@enderror</div>@endif
+            <div><label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Password {{ $editing ? '(opsional)' : '*' }}</label><input type="password" name="password" @required(!$editing) autocomplete="new-password" class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 dark:border-gray-700 dark:text-white/90">@error('password')<p class="mt-1 text-xs text-error-500">{{ $message }}</p>@enderror</div>
+            <div><label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Konfirmasi Password {{ $editing ? '' : '*' }}</label><input type="password" name="password_confirmation" @required(!$editing) autocomplete="new-password" class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 dark:border-gray-700 dark:text-white/90"></div>
+        </div>
+        @if($editing)<p class="mt-4 text-xs text-gray-500">Kosongkan password jika tidak ingin mengubahnya.</p>@endif
+    </div>
+    <div class="flex flex-wrap justify-end gap-3"><a href="{{ $cancelRoute }}" class="crud-btn-secondary">Batal</a><button class="crud-btn-primary">{{ $editing ? 'Simpan Perubahan' : 'Buat Akun' }}</button></div>
+</form>

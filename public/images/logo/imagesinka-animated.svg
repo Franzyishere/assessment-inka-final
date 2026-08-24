@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 423 133" role="img" aria-labelledby="title description">
+  <title id="title">Logo INKA</title>
+  <desc id="description">Ikon INKA digambar terlebih dahulu, diikuti huruf I, N, K, dan A.</desc>
+  <defs>
+    <clipPath id="icon"><rect width="94" height="133"/></clipPath>
+    <clipPath id="letter-i"><rect x="94" width="36" height="133"/></clipPath>
+    <clipPath id="letter-n"><rect x="130" width="65" height="133"/></clipPath>
+    <clipPath id="letter-k"><rect x="195" width="86" height="133"/></clipPath>
+    <clipPath id="letter-a"><rect x="281" width="142" height="133"/></clipPath>
+    <mask id="icon-draw">
+      <rect class="icon-reveal" width="94" height="133" rx="2" fill="white"/>
+    </mask>
+  </defs>
+
+  <style>
+    .icon-part { opacity: 0; animation: iconIn 1.05s cubic-bezier(.22,.8,.22,1) .12s forwards; }
+    .icon-reveal { transform-box: fill-box; transform-origin: left; animation: drawIcon 1.05s cubic-bezier(.22,.8,.22,1) .12s both; }
+    .letter { opacity: 0; transform: translateY(13px); animation: letterIn .48s cubic-bezier(.2,.8,.2,1) forwards; }
+    .i { animation-delay: 1.12s; } .n { animation-delay: 1.42s; }
+    .k { animation-delay: 1.72s; } .a { animation-delay: 2.02s; }
+    .whole { opacity: 0; animation: wholeIn .42s ease-out 2.55s forwards; }
+    @keyframes drawIcon { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+    @keyframes iconIn { 0% { opacity: 0; } 20%,100% { opacity: 1; } }
+    @keyframes letterIn { to { opacity: 1; transform: translateY(0); } }
+    @keyframes wholeIn { to { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) {
+      .icon-part, .icon-reveal, .letter, .whole { animation: none; opacity: 1; transform: none; }
+    }
+  </style>
+
+  <g class="icon-part" clip-path="url(#icon)" mask="url(#icon-draw)">
+    <image width="423" height="133" href="imagesinka.png" xlink:href="imagesinka.png"/>
+  </g>
+  <g class="letter i" clip-path="url(#letter-i)"><image width="423" height="133" href="imagesinka.png" xlink:href="imagesinka.png"/></g>
+  <g class="letter n" clip-path="url(#letter-n)"><image width="423" height="133" href="imagesinka.png" xlink:href="imagesinka.png"/></g>
+  <g class="letter k" clip-path="url(#letter-k)"><image width="423" height="133" href="imagesinka.png" xlink:href="imagesinka.png"/></g>
+  <g class="letter a" clip-path="url(#letter-a)"><image width="423" height="133" href="imagesinka.png" xlink:href="imagesinka.png"/></g>
+  <image class="whole" width="423" height="133" href="imagesinka.png" xlink:href="imagesinka.png"/>
+</svg>
