@@ -49,8 +49,13 @@
             </button>
 
             <!-- Logo (mobile only) -->
-            <a href="/" class="xl:hidden">
-                <img src="{{ asset('images/logo/logo-inka-sidebar.png') }}" alt="INKA" class="h-auto w-32 object-contain" />
+            <a href="/" class="flex h-10 items-center overflow-hidden xl:hidden">
+                <video autoplay muted loop playsinline preload="metadata" disablepictureinpicture
+                    poster="{{ asset('images/logo/logo-inka-sidebar.png') }}"
+                    class="h-auto w-32 object-contain" aria-label="Logo animasi INKA">
+                    <source src="{{ asset('images/logo/logo-inka-motionn.mp4') }}?v={{ filemtime(public_path('images/logo/logo-inka-motionn.mp4')) }}" type="video/mp4" media="(max-width: 1279px)">
+                    <img src="{{ asset('images/logo/logo-inka-sidebar.png') }}" alt="INKA" class="h-auto w-32 object-contain">
+                </video>
             </a>
 
             <!-- Application Menu Toggle (mobile only) -->

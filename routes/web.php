@@ -13,6 +13,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Participant\AssessmentSimulationController;
 use App\Http\Controllers\Participant\AssessmentResultController;
+use App\Http\Controllers\Participant\AssessmentScheduleController;
 use App\Http\Controllers\SuperAdmin\AccessControlController;
 use App\Http\Controllers\SuperAdmin\AuditLogController;
 use App\Http\Controllers\SuperAdmin\UserManagementController;
@@ -83,7 +84,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/simulations/{programSimulation}/presentation', [AssessmentSimulationController::class, 'submitPresentation'])->name('simulations.presentation.submit');
         Route::get('/simulations/{programSimulation}/case-response', [AssessmentSimulationController::class, 'caseResponse'])->name('simulations.case-response');
         Route::post('/simulations/{programSimulation}/case-response', [AssessmentSimulationController::class, 'submitCaseResponse'])->name('simulations.case-response.submit');
-        Route::get('/schedule', [DashboardController::class, 'placeholder'])->defaults('pageTitle', 'Jadwal Assessment')->name('schedule.index');
+        Route::get('/schedule', [AssessmentScheduleController::class, 'index'])->name('schedule.index');
         Route::get('/results', [AssessmentResultController::class, 'index'])->name('results.index');
     });
 

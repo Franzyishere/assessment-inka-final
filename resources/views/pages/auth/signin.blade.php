@@ -4,6 +4,16 @@
 <div class="relative min-h-screen bg-white dark:bg-gray-900">
     <div class="relative flex min-h-screen flex-col justify-center px-6 py-12 lg:w-1/2 lg:px-16">
         <div class="mx-auto w-full max-w-md">
+            <div class="mb-7 flex justify-center lg:hidden">
+                <div class="flex w-full max-w-[280px] items-center justify-center overflow-hidden px-4">
+                    <video autoplay muted loop playsinline preload="metadata" disablepictureinpicture
+                        poster="{{ asset('images/logo/logo-inka-full.svg') }}"
+                        class="h-auto w-full object-contain" aria-label="Logo animasi PT INKA">
+                        <source src="{{ asset('images/logo/logo-inka-motionn.mp4') }}?v={{ filemtime(public_path('images/logo/logo-inka-motionn.mp4')) }}" type="video/mp4" media="(max-width: 1023px)">
+                        <img src="{{ asset('images/logo/logo-inka-full.svg') }}" alt="Logo PT INKA" class="h-auto w-full object-contain">
+                    </video>
+                </div>
+            </div>
             <div class="mb-8">
                 <h1 class="text-title-sm sm:text-title-md mb-2 font-semibold text-gray-800 dark:text-white/90">Masuk</h1>
                 <p class="text-sm text-gray-500 dark:text-gray-400">Masukkan email dan password untuk mengakses Assessment INKA.</p>
@@ -50,7 +60,13 @@
         <x-common.common-grid-shape />
         <div class="z-1 flex max-w-sm flex-col items-center px-8 text-center">
             <div class="mb-6 flex min-h-[150px] w-full items-center justify-center rounded-2xl bg-white p-5 shadow-theme-lg">
-                <img src="{{ asset('images/logo/logo-inka-login-motion.svg') }}?v={{ filemtime(public_path('images/logo/logo-inka-login-motion.svg')) }}" alt="Logo PT INKA" class="h-auto w-full max-w-[360px]" />
+                <video autoplay muted loop playsinline preload="metadata" disablepictureinpicture
+                    poster="{{ asset('images/logo/logo-inka-full.svg') }}"
+                    class="h-auto w-full max-w-[360px] object-contain" aria-label="Logo animasi PT INKA">
+                    <source src="{{ asset('images/logo/logo-inka-motionn.mp4') }}?v={{ filemtime(public_path('images/logo/logo-inka-motionn.mp4')) }}" type="video/mp4" media="(min-width: 1024px)">
+                    <img src="{{ asset('images/logo/logo-inka-full.svg') }}" alt="Logo PT INKA"
+                        class="h-auto w-full object-contain">
+                </video>
             </div>
             <p class="text-gray-400 dark:text-white/60">Portal assessment internal dan rekrutmen PT INKA.</p>
         </div>
