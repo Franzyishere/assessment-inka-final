@@ -4,12 +4,14 @@
 <div class="relative min-h-screen bg-white dark:bg-gray-900">
     <div class="relative flex min-h-screen flex-col justify-center px-6 py-12 lg:w-1/2 lg:px-16">
         <div class="mx-auto w-full max-w-md">
-            <div class="mb-7 flex justify-center lg:hidden">
+            <div class="mb-7 flex justify-center md:hidden">
                 <div class="flex w-full max-w-[280px] items-center justify-center overflow-hidden px-4">
-                    <video autoplay muted loop playsinline preload="metadata" disablepictureinpicture
+                    <video autoplay muted loop playsinline preload="auto" disablepictureinpicture
+                        x-init="$nextTick(() => $el.play().catch(() => {}))"
+                        x-on:canplay="$el.play().catch(() => {})"
                         poster="{{ asset('images/logo/logo-inka-full.svg') }}"
                         class="h-auto w-full object-contain" aria-label="Logo animasi PT INKA">
-                        <source src="{{ asset('images/logo/logo-inka-motionn.mp4') }}?v={{ filemtime(public_path('images/logo/logo-inka-motionn.mp4')) }}" type="video/mp4" media="(max-width: 1023px)">
+                        <source src="{{ asset('images/logo/logo-inka-motion.mp4') }}?v={{ filemtime(public_path('images/logo/logo-inka-motion.mp4')) }}" type="video/mp4">
                         <img src="{{ asset('images/logo/logo-inka-full.svg') }}" alt="Logo PT INKA" class="h-auto w-full object-contain">
                     </video>
                 </div>
@@ -63,7 +65,7 @@
                 <video autoplay muted loop playsinline preload="metadata" disablepictureinpicture
                     poster="{{ asset('images/logo/logo-inka-full.svg') }}"
                     class="h-auto w-full max-w-[360px] object-contain" aria-label="Logo animasi PT INKA">
-                    <source src="{{ asset('images/logo/logo-inka-motionn.mp4') }}?v={{ filemtime(public_path('images/logo/logo-inka-motionn.mp4')) }}" type="video/mp4" media="(min-width: 1024px)">
+                    <source src="{{ asset('images/logo/logo-inka-motion.mp4') }}?v={{ filemtime(public_path('images/logo/logo-inka-motion.mp4')) }}" type="video/mp4" media="(min-width: 1024px)">
                     <img src="{{ asset('images/logo/logo-inka-full.svg') }}" alt="Logo PT INKA"
                         class="h-auto w-full object-contain">
                 </video>

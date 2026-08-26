@@ -73,7 +73,7 @@
                 :class="($store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen) ? 'w-[170px]' : 'w-12'"
                 x-effect="($store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen) ? $el.play().catch(() => {}) : $el.pause()"
                 aria-label="Logo animasi INKA">
-                <source src="{{ asset('images/logo/logo-inka-motionn.mp4') }}?v={{ filemtime(public_path('images/logo/logo-inka-motionn.mp4')) }}" type="video/mp4">
+                <source src="{{ asset('images/logo/logo-inka-motion.mp4') }}?v={{ filemtime(public_path('images/logo/logo-inka-motion.mp4')) }}" type="video/mp4">
                 <img src="{{ asset('images/logo/logo-inka-sidebar.png') }}" alt="INKA" class="h-auto w-[170px] object-contain">
             </video>
 
