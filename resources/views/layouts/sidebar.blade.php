@@ -61,7 +61,7 @@
     @mouseenter="if (!$store.sidebar.isExpanded) $store.sidebar.setHovered(true)"
     @mouseleave="$store.sidebar.setHovered(false)">
     <!-- Logo Section -->
-    <div class="mb-3 flex border-b border-gray-100 pb-4 pt-3 dark:border-gray-800"
+    <div class="mb-3 flex border-b border-red-800 pb-4 pt-3 dark:border-gray-800"
         :class="(!$store.sidebar.isExpanded && !$store.sidebar.isHovered && !$store.sidebar.isMobileOpen) ?
         'xl:justify-center' :
         'justify-start'">
