@@ -3,9 +3,6 @@
 @section('content')
 <x-common.page-breadcrumb pageTitle="Bank Simulasi" />
 
-@if (session('success'))
-    <div class="mb-5 rounded-lg border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700 dark:border-success-500/30 dark:bg-success-500/10 dark:text-success-400">{{ session('success') }}</div>
-@endif
 
 <div class="mb-5 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-700 dark:border-brand-500/30 dark:bg-brand-500/10 dark:text-brand-300">
     Empat simulasi merupakan katalog tetap. Admin hanya perlu memperbarui materi dan durasi; jenis simulasi tidak perlu dibuat ulang.

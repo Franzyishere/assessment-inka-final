@@ -12,7 +12,7 @@ test('user can authenticate with email and password', function () {
     $this->post(route('login.store'), [
         'email' => $user->email,
         'password' => 'password',
-    ])->assertRedirect(route('admin.dashboard'));
+    ])->assertRedirect(route('portal.index'));
 
     $this->assertAuthenticatedAs($user);
 });

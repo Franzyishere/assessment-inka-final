@@ -18,7 +18,7 @@
             </div>
             <div class="mb-8">
                 <h1 class="text-title-sm sm:text-title-md mb-2 font-semibold text-gray-800 dark:text-white/90">Masuk</h1>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Masukkan email dan password untuk mengakses Assessment INKA.</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Masukkan email dan password untuk mengakses INKA Talent Management System.</p>
             </div>
 
             @if ($errors->any())
@@ -58,7 +58,7 @@
         </div>
     </div>
 
-    <div class="bg-brand-950 absolute inset-y-0 right-0 hidden w-1/2 items-center justify-center lg:flex dark:bg-white/5">
+    <div class="absolute inset-y-0 right-0 hidden w-1/2 items-center justify-center bg-gradient-to-b from-brand-950 via-brand-800 to-brand-600 lg:flex">
         <x-common.common-grid-shape />
         <div class="z-1 flex max-w-sm flex-col items-center px-8 text-center">
             <div class="mb-6 flex min-h-[150px] w-full items-center justify-center rounded-2xl bg-white p-5 shadow-theme-lg">
@@ -70,7 +70,7 @@
                         class="h-auto w-full object-contain">
                 </video>
             </div>
-            <p class="text-gray-400 dark:text-white/60">Portal assessment internal dan rekrutmen PT INKA.</p>
+            <p class="text-gray-100">Assessment, Psychometric Test, and Recruitment Portal.</p>
         </div>
     </div>
 

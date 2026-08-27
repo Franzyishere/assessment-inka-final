@@ -23,7 +23,7 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
         AuditLogger::record($request, 'auth.login', $request->user(), ['role' => $request->user()->role]);
 
-        return redirect()->intended(route($request->user()->dashboardRouteName(), absolute: false));
+        return redirect()->intended(route('portal.index', absolute: false));
     }
 
     public function destroy(Request $request): RedirectResponse

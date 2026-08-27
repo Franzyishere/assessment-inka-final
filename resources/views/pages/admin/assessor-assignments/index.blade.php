@@ -2,7 +2,6 @@
 
 @section('content')
 <x-common.page-breadcrumb pageTitle="Penugasan Asesor" />
-@if(session('success'))<div class="mb-5 rounded-lg border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700">{{ session('success') }}</div>@endif
 <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
     <div class="flex flex-col gap-4 border-b border-gray-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-gray-800">
         <div><h2 class="font-semibold text-gray-800 dark:text-white/90">Tim Asesor Program</h2><p class="mt-1 text-sm text-gray-500">Satu tim asesor berlaku untuk seluruh simulasi dalam program.</p></div>

@@ -11,9 +11,10 @@ use App\Http\Controllers\Assessor\AssignedSimulationController;
 use App\Http\Controllers\Assessor\SimulationReviewController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\Participant\AssessmentSimulationController;
 use App\Http\Controllers\Participant\AssessmentResultController;
 use App\Http\Controllers\Participant\AssessmentScheduleController;
+use App\Http\Controllers\Participant\AssessmentSimulationController;
+use App\Http\Controllers\PortalController;
 use App\Http\Controllers\SuperAdmin\AccessControlController;
 use App\Http\Controllers\SuperAdmin\AuditLogController;
 use App\Http\Controllers\SuperAdmin\UserManagementController;
@@ -25,7 +26,8 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/', [DashboardController::class, 'redirect'])->name('dashboard');
+    Route::redirect('/', '/portal')->name('dashboard');
+    Route::get('/portal', [PortalController::class, 'index'])->name('portal.index');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
     Route::middleware('role:super_admin')->prefix('super-admin')->name('super-admin.')->group(function () {

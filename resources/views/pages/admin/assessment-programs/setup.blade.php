@@ -3,9 +3,6 @@
 @section('content')
 <x-common.page-breadcrumb pageTitle="Atur Program Assessment" />
 
-@if (session('success'))
-    <div class="mb-5 rounded-lg border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700 dark:border-success-500/30 dark:bg-success-500/10 dark:text-success-400">{{ session('success') }}</div>
-@endif
 
 @php
     $initialParticipants = array_map('intval', old('participant_ids', $selectedParticipants));

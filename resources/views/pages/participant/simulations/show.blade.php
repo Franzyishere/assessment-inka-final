@@ -2,7 +2,6 @@
 
 @section('content')
 <x-common.page-breadcrumb pageTitle="Detail Simulasi" />
-@if (session('success'))<div class="mx-auto mb-5 max-w-4xl rounded-xl border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700 dark:border-success-500/30 dark:bg-success-500/10 dark:text-success-400">{{ session('success') }}</div>@endif
 <div class="mx-auto max-w-4xl rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
     <span class="text-xs font-medium uppercase text-brand-500">{{ $programSimulation->scenario->type->name }}</span>
     <h1 class="mt-2 text-2xl font-semibold text-gray-800 dark:text-white/90">{{ $participation->requiresSimulationThreeChoice() ? 'Pilih Jalur Simulasi 3' : ($programSimulation->scenario->simulationThreePackageLabel() ?? $programSimulation->scenario->type->name) }}</h1>

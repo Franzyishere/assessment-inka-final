@@ -40,6 +40,7 @@ class MenuHelper
     private static function superAdminItems(): array
     {
         return [
+            self::item('pages', 'Portal Utama', 'portal.index'),
             self::item('dashboard', 'Dashboard Sistem', 'super-admin.dashboard'),
             self::item('user-profile', 'Manajemen Pengguna', 'super-admin.users.index'),
             self::item('authentication', 'Role & Hak Akses', 'super-admin.roles.index'),
@@ -50,6 +51,7 @@ class MenuHelper
     private static function adminItems(): array
     {
         return [
+            self::item('pages', 'Portal Utama', 'portal.index'),
             self::item('dashboard', 'Dashboard', 'admin.dashboard'),
             self::item('pages', 'Program Assessment', 'admin.assessment-programs.index'),
             self::item('forms', 'Bank Simulasi', 'admin.simulations.index'),
@@ -63,6 +65,7 @@ class MenuHelper
     private static function asesorItems(): array
     {
         return [
+            self::item('pages', 'Portal Utama', 'portal.index'),
             self::item('dashboard', 'Dashboard', 'asesor.dashboard'),
             self::item('forms', 'Simulasi Ditugaskan', 'asesor.simulations.index'),
             self::item('user-profile', 'Peserta Assessment', 'asesor.participants.index'),
@@ -74,6 +77,7 @@ class MenuHelper
     private static function pesertaAssessmentItems(): array
     {
         return [
+            self::item('pages', 'Portal Utama', 'portal.index'),
             self::item('dashboard', 'Dashboard', 'peserta-assessment.dashboard'),
             self::item('forms', 'Simulasi Saya', 'peserta-assessment.simulations.index'),
             self::item('calendar', 'Jadwal Assessment', 'peserta-assessment.schedule.index'),
@@ -84,6 +88,7 @@ class MenuHelper
     private static function pesertaRekrutmenItems(): array
     {
         return [
+            self::item('pages', 'Portal Utama', 'portal.index'),
             self::item('dashboard', 'Dashboard', 'peserta-rekrutmen.dashboard'),
             self::item('forms', 'Ujian Saya', 'peserta-rekrutmen.exams.index'),
             self::item('calendar', 'Tahapan Seleksi', 'peserta-rekrutmen.stages.index'),

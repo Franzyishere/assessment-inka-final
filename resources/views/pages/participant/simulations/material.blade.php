@@ -23,7 +23,6 @@
         </div>
         <div class="h-1 bg-gray-100 dark:bg-gray-800"><div class="h-full transition-all duration-1000" :class="remaining <= 300 ? 'bg-error-500' : (remaining <= 900 ? 'bg-warning-500' : 'bg-brand-500')" :style="`width: ${Math.max(0, Math.min(100, (remaining / initialRemaining) * 100))}%`"></div></div>
     </div>
-    @if (session('success'))<div class="rounded-lg border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700">{{ session('success') }}</div>@endif
     <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
         <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-800"><div><span class="text-xs font-medium text-brand-500">Materi {{ $pageNumber }}</span><h2 class="mt-1 font-semibold text-gray-800 dark:text-white/90">Uraian Simulasi</h2></div><a target="_blank" href="{{ route('peserta-assessment.simulations.material.pdf', [$programSimulation, $material]) }}" class="text-sm font-medium text-brand-500">Buka PDF di tab baru</a></div>
         <iframe title="Materi PDF {{ $pageNumber }}" src="{{ route('peserta-assessment.simulations.material.pdf', [$programSimulation, $material]) }}#toolbar=1&navpanes=0" class="h-[72vh] min-h-[640px] w-full bg-gray-100"></iframe>

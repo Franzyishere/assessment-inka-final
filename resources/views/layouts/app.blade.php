@@ -7,7 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon-inka-32.svg') }}?v={{ filemtime(public_path('favicon-inka-32.svg')) }}">
 
-    <title>{{ $title ?? 'Dashboard' }} | Assessment INKA</title>
+    <title>{{ $title ?? 'Dashboard' }} | INKA Talent Management System</title>
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -72,6 +72,8 @@
         }
     };
     window.addEventListener('resize', checkMobile);">
+
+    <x-ui.notifications />
 
     {{-- preloader --}}
     <x-common.preloader/>

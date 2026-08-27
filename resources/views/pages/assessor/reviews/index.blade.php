@@ -3,9 +3,6 @@
 @section('content')
 <x-common.page-breadcrumb pageTitle="Penilaian & Rekomendasi" />
 
-@if(session('success'))
-    <div class="mb-5 flex items-start gap-3 rounded-xl border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700"><span class="mt-0.5 flex size-5 items-center justify-center rounded-full bg-success-500 text-xs text-white">✓</span><span>{{ session('success') }}</span></div>
-@endif
 
 @php
     $finalCount = $sessions->getCollection()->filter(fn ($session) => $session->reviews->first()?->status === 'submitted')->count();
