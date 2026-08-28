@@ -24,6 +24,19 @@ class PortalController extends Controller
             'assessmentUrl' => $user->hasRole(...$assessmentRoles)
                 ? route($user->dashboardRouteName())
                 : null,
+            'assessmentDescription' => match ($user->role) {
+                User::ROLE_SUPER_ADMIN => 'Pantau seluruh aktivitas assessment, kelola pengguna, hak akses, dan audit sistem dari satu ruang kerja.',
+                User::ROLE_ADMIN => 'Kelola program assessment, bank simulasi, peserta, penugasan asesor, dan monitoring pelaksanaan.',
+                User::ROLE_ASESOR => 'Pantau peserta yang ditugaskan, buka hasil simulasi, berikan penilaian, dan susun rekomendasi.',
+                User::ROLE_PESERTA_ASSESSMENT => 'Lihat jadwal, kerjakan simulasi yang tersedia, dan pantau hasil assessment Anda.',
+                default => 'Modul assessment hanya tersedia bagi pengguna yang memiliki penugasan dan hak akses assessment.',
+            },
+            'recruitmentDescription' => match ($user->role) {
+                User::ROLE_SUPER_ADMIN => 'Kelola akses dan pantau aktivitas proses rekrutmen, termasuk tahapan psikotes, setelah modul diaktifkan.',
+                User::ROLE_ADMIN => 'Kelola kebutuhan rekrutmen, kandidat, tahapan seleksi, dan pelaksanaan psikotes dalam satu alur.',
+                User::ROLE_PESERTA_REKRUTMEN => 'Pantau tahapan seleksi, jadwal, pengumuman, dan psikotes yang diberikan kepada Anda.',
+                default => 'Proses kandidat dan tahapan psikotes dikelola secara terintegrasi di dalam modul rekrutmen.',
+            },
         ]);
     }
 }
