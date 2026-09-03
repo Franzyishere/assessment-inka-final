@@ -1,11 +1,11 @@
 @props([
-    'title' => 'INKA Talent Management System',
-    'description' => 'Portal terintegrasi PT Industri Kereta Api (Persero) untuk layanan Assessment dan Recruitment.',
+    'title' => 'INKA Assessment System',
+    'description' => 'Sistem Assessment PT Industri Kereta Api (Persero) untuk pengelolaan program, simulasi, peserta, dan penilaian.',
     'image' => null,
 ])
 
 @php
-    $siteName = 'INKA Talent Management System';
+    $siteName = 'INKA Assessment System';
     $metaTitle = $title === $siteName ? $siteName : $title.' | '.$siteName;
     $metaImage = $image ?: asset('images/logo/imagesinka.png');
     $metaUrl = url()->current();

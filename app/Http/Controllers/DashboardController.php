@@ -74,25 +74,6 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function pesertaRekrutmen(): View
-    {
-        return $this->dashboard('Dashboard Peserta Rekrutmen', 'Fondasi portal rekrutmen telah tersedia dan detail alurnya menunggu keputusan client.', [
-            ['label' => 'Ujian Aktif', 'value' => '0', 'description' => 'Belum ada ujian yang dijadwalkan'],
-            ['label' => 'Tahap Seleksi', 'value' => '-', 'description' => 'Akan disesuaikan dengan proses rekrutmen final'],
-            ['label' => 'Status', 'value' => 'Menunggu', 'description' => 'Belum ada proses rekrutmen aktif'],
-        ]);
-    }
-
-    public function placeholder(Request $request): View
-    {
-        $title = (string) ($request->route()->defaults['pageTitle'] ?? 'Layanan Rekrutmen');
-
-        return view('pages.placeholder', [
-            'title' => $title,
-            'description' => 'Struktur menu dan proteksi akses sudah tersedia. Fitur ini akan dibangun pada tahap domain berikutnya.',
-        ]);
-    }
-
     private function dashboard(string $title, string $description, array $metrics): View
     {
         return view('pages.dashboard.index', compact('title', 'description', 'metrics'));

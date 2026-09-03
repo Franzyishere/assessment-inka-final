@@ -6,7 +6,6 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -39,14 +38,11 @@ class User extends Authenticatable
 
     public const ROLE_PESERTA_ASSESSMENT = 'peserta_assessment';
 
-    public const ROLE_PESERTA_REKRUTMEN = 'peserta_rekrutmen';
-
     public const ROLES = [
         self::ROLE_SUPER_ADMIN,
         self::ROLE_ADMIN,
         self::ROLE_ASESOR,
         self::ROLE_PESERTA_ASSESSMENT,
-        self::ROLE_PESERTA_REKRUTMEN,
     ];
 
     public function hasRole(string ...$roles): bool
@@ -61,7 +57,6 @@ class User extends Authenticatable
             self::ROLE_ADMIN => 'admin.dashboard',
             self::ROLE_ASESOR => 'asesor.dashboard',
             self::ROLE_PESERTA_ASSESSMENT => 'peserta-assessment.dashboard',
-            self::ROLE_PESERTA_REKRUTMEN => 'peserta-rekrutmen.dashboard',
             default => abort(403, 'Role pengguna tidak dikenali.'),
         };
     }
@@ -73,7 +68,6 @@ class User extends Authenticatable
             self::ROLE_ADMIN => 'Admin HCGA',
             self::ROLE_ASESOR => 'Asesor',
             self::ROLE_PESERTA_ASSESSMENT => 'Peserta Assessment',
-            self::ROLE_PESERTA_REKRUTMEN => 'Peserta Rekrutmen',
             default => 'Pengguna',
         };
     }
@@ -96,16 +90,6 @@ class User extends Authenticatable
     public function simulationReviews(): HasMany
     {
         return $this->hasMany(SimulationReview::class, 'assessor_id');
-    }
-
-    public function recruitmentParticipant(): HasOne
-    {
-        return $this->hasOne(RecruitmentParticipant::class);
-    }
-
-    public function createdRecruitmentBatches(): HasMany
-    {
-        return $this->hasMany(RecruitmentBatch::class, 'created_by');
     }
 
     /**

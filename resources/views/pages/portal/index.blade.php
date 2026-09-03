@@ -14,9 +14,7 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-        .portal-background-wave {
-            animation: none;
-        }
+        .portal-background-wave { animation: none; }
     }
 </style>
 @endpush
@@ -50,11 +48,11 @@
     <main class="relative z-10 mx-auto max-w-7xl px-5 pb-12 pt-14 sm:px-8 sm:pt-20">
         <div class="max-w-3xl">
             <span class="inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/80">Human Capital & General Affairs Digital Platform</span>
-            <h1 class="mt-5 text-3xl font-bold tracking-tight text-white sm:text-5xl">INKA Talent Management System</h1>
-            <p class="mt-4 max-w-2xl text-sm leading-7 text-white/70 sm:text-base">Satu portal terintegrasi untuk mengakses layanan Assessment dan Rekrutmen PT Industri Kereta Api (Persero).</p>
+            <h1 class="mt-5 text-3xl font-bold tracking-tight text-white sm:text-5xl">INKA Assessment System</h1>
+            <p class="mt-4 max-w-2xl text-sm leading-7 text-white/70 sm:text-base">Portal pengelolaan dan pelaksanaan Assessment PT Industri Kereta Api (Persero).</p>
         </div>
 
-        <section class="mt-12 grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <section class="mt-12 max-w-2xl">
             <article class="group flex min-h-[360px] flex-col overflow-hidden rounded-3xl border border-white/70 bg-white p-6 shadow-theme-lg transition duration-300 hover:-translate-y-1 hover:shadow-2xl sm:p-7">
                 <div class="flex items-start justify-between gap-4">
                     <span class="flex size-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
@@ -62,7 +60,7 @@
                     </span>
                     @if($assessmentAvailable)<span class="inline-flex items-center gap-1.5 rounded-full bg-success-50 px-3 py-1 text-xs font-semibold text-success-700"><span class="size-1.5 rounded-full bg-success-500"></span>Aktif</span>@else<span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-500">Tidak Ada Akses</span>@endif
                 </div>
-                <div class="mt-7"><p class="text-xs font-semibold uppercase tracking-[0.16em] text-brand-600"></p><h2 class="mt-2 text-2xl font-bold text-gray-900">Assessment</h2><p class="mt-3 text-sm leading-6 text-gray-500">{{ $assessmentDescription }}</p></div>
+                <div class="mt-7"><h2 class="text-2xl font-bold text-gray-900">Assessment</h2><p class="mt-3 text-sm leading-6 text-gray-500">{{ $assessmentDescription }}</p></div>
                 <div class="mt-auto pt-8">
                     @if($assessmentAvailable)
                         <a href="{{ $assessmentUrl }}" class="flex w-full items-center justify-between rounded-xl bg-brand-600 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-brand-700"><span>Buka Assessment</span><span aria-hidden="true">→</span></a>
@@ -71,15 +69,9 @@
                     @endif
                 </div>
             </article>
-
-            <article class="group flex min-h-[360px] flex-col overflow-hidden rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-md transition duration-300 hover:-translate-y-1 hover:shadow-2xl sm:p-7">
-                <div class="flex items-start justify-between gap-4"><span class="flex size-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-600"><svg class="size-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 7V4h8v3m-11 4h14m-1-4H6a2 2 0 0 0-2 2v10h16V9a2 2 0 0 0-2-2Z"/><path d="M9 14h6m-6 3h4"/></svg></span>@if($recruitmentAvailable)<span class="inline-flex items-center gap-1.5 rounded-full bg-success-50 px-3 py-1 text-xs font-semibold text-success-700"><span class="size-1.5 rounded-full bg-success-500"></span>Aktif</span>@else<span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-500">Tidak Ada Akses</span>@endif</div>
-                <div class="mt-7"><p class="text-xs font-semibold uppercase tracking-[0.16em] text-[#d97706]"></p><h2 class="mt-2 text-2xl font-bold text-gray-900">Recruitment</h2><p class="mt-3 text-sm leading-6 text-gray-500">{{ $recruitmentDescription }}</p></div>
-                <div class="mt-auto pt-8">@if($recruitmentAvailable)<a href="{{ $recruitmentUrl }}" class="flex w-full items-center justify-between rounded-xl bg-brand-600 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-brand-700"><span>Buka Recruitment</span><span aria-hidden="true">→</span></a>@else<span class="flex w-full cursor-not-allowed items-center justify-center rounded-xl bg-gray-100 px-5 py-3.5 text-sm font-semibold text-gray-400">Akses Tidak Tersedia</span>@endif</div>
-            </article>
         </section>
 
-        <footer class="mt-10 flex flex-col gap-2 border-t border-gray-200 pt-6 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between"><p>© {{ date('Y') }} PT Industri Kereta Api (Persero)</p><p>INKA Talent Management System</p></footer>
+        <footer class="mt-10 flex flex-col gap-2 border-t border-gray-200 pt-6 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between"><p>© {{ date('Y') }} PT Industri Kereta Api (Persero)</p><p>INKA Assessment System</p></footer>
     </main>
 </div>
 @endsection

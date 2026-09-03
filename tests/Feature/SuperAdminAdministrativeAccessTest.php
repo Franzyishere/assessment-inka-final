@@ -16,7 +16,6 @@ test('super admin can access every assessment administration workspace', functio
     $this->actingAs($superAdmin)->get(route('admin.participants.index'))->assertOk();
     $this->actingAs($superAdmin)->get(route('admin.assessor-assignments.index'))->assertOk();
     $this->actingAs($superAdmin)->get(route('admin.monitoring.index'))->assertOk();
-    $this->actingAs($superAdmin)->get(route('admin.recruitment.index'))->assertOk();
 });
 
 test('super admin can create assessment program data', function () {

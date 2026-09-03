@@ -25,9 +25,8 @@
                     </video>
                 </div>
                 <div class="mt-10 max-w-lg">
-                    <!-- <span class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[.16em]"><span class="size-1.5 rounded-full bg-white"></span>Talent Management System</span> -->
-                    <h1 class="mt-5 text-4xl font-bold leading-tight">Talent Management System INKA</h1>
-                    <p class="mt-5 max-w-md text-sm leading-7 text-white/75 xl:text-base">Akses layanan Assessment dan Recruitment PT Industri Kereta Api (Persero) secara aman sesuai peran dan penugasan Anda.</p>
+                    <h1 class="mt-5 text-4xl font-bold leading-tight">Assessment System INKA</h1>
+                    <p class="mt-5 max-w-md text-sm leading-7 text-white/75 xl:text-base">Akses layanan Assessment PT Industri Kereta Api (Persero) secara aman sesuai peran dan penugasan Anda.</p>
                 </div>
             </div>
         </div>

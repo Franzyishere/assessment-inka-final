@@ -7,7 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon-inka-32.svg') }}?v={{ filemtime(public_path('favicon-inka-32.svg')) }}">
 
-    <title>{{ $title ?? 'Dashboard' }} | INKA Talent Management System</title>
+    <title>{{ $title ?? 'Dashboard' }} | INKA Assessment System</title>
     <x-layout.open-graph :title="$title ?? 'Dashboard'" />
     @stack('meta')
 

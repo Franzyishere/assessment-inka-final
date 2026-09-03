@@ -32,5 +32,5 @@ test('user management activity is visible only to super admin', function () {
 
 test('role access matrix is available to super admin', function () {
     $superAdmin = User::where('role', User::ROLE_SUPER_ADMIN)->firstOrFail();
-    $this->actingAs($superAdmin)->get(route('super-admin.roles.index'))->assertOk()->assertSee('Admin HCGA')->assertSee('Peserta Rekrutmen');
+    $this->actingAs($superAdmin)->get(route('super-admin.roles.index'))->assertOk()->assertSee('Admin HCGA')->assertSee('Peserta Assessment')->assertDontSee('Peserta Rekrutmen');
 });

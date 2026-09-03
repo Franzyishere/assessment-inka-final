@@ -13,7 +13,6 @@ it('redirects every role from root to the talent portal', function (string $role
     User::ROLE_ADMIN,
     User::ROLE_ASESOR,
     User::ROLE_PESERTA_ASSESSMENT,
-    User::ROLE_PESERTA_REKRUTMEN,
 ]);
 
 it('allows every role to open its own dashboard', function (string $role, string $routeName) {
@@ -25,7 +24,6 @@ it('allows every role to open its own dashboard', function (string $role, string
     [User::ROLE_ADMIN, 'admin.dashboard'],
     [User::ROLE_ASESOR, 'asesor.dashboard'],
     [User::ROLE_PESERTA_ASSESSMENT, 'peserta-assessment.dashboard'],
-    [User::ROLE_PESERTA_REKRUTMEN, 'peserta-rekrutmen.dashboard'],
 ]);
 
 test('user cannot open another role dashboard', function () {
@@ -33,13 +31,5 @@ test('user cannot open another role dashboard', function () {
 
     $this->actingAs($asesor)
         ->get(route('admin.dashboard'))
-        ->assertForbidden();
-});
-
-test('recruitment participant cannot access internal assessment simulations', function () {
-    $candidate = User::factory()->create(['role' => User::ROLE_PESERTA_REKRUTMEN]);
-
-    $this->actingAs($candidate)
-        ->get(route('peserta-assessment.simulations.index'))
         ->assertForbidden();
 });
