@@ -11,12 +11,12 @@
         Format yang diterima hanya PDF. Ukuran maksimal 25 MB. Setelah dikumpulkan, file tidak dapat diganti.
     </div>
 
-    <form method="POST" enctype="multipart/form-data" action="{{ route('peserta-assessment.simulations.presentation.submit', $programSimulation) }}" class="mt-6" onsubmit="return confirm('Pastikan file sudah benar. Kumpulkan presentasi sekarang?')">
+    <form x-ref="presentationForm" method="POST" enctype="multipart/form-data" action="{{ route('peserta-assessment.simulations.presentation.submit', $programSimulation) }}" class="mt-6">
         @csrf
         <label for="presentation" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">File Presentasi *</label>
         <input id="presentation" type="file" name="presentation" accept="application/pdf,.pdf" required class="block w-full rounded-lg border border-gray-300 bg-transparent p-3 text-sm text-gray-700 file:mr-4 file:rounded-md file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-brand-600 dark:border-gray-700 dark:text-gray-300">
         @error('presentation')<p class="mt-2 text-xs text-error-500">{{ $message }}</p>@enderror
-        <div class="mt-6 flex justify-end gap-3"><a href="{{ route('peserta-assessment.simulations.show', $programSimulation) }}" class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 dark:border-gray-700 dark:text-gray-300">Kembali</a><button class="rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600">Kumpulkan Presentasi</button></div>
+        <div class="mt-6 flex justify-end gap-3"><a href="{{ route('peserta-assessment.simulations.show', $programSimulation) }}" class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 dark:border-gray-700 dark:text-gray-300">Kembali</a><button type="button" class="rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600" @click="$dispatch('confirm-dialog', { title: 'Kumpulkan presentasi?', message: 'Pastikan file PDF sudah benar. File tidak dapat diganti setelah dikumpulkan.', confirmLabel: 'Ya, Kumpulkan', onConfirm: () => $refs.presentationForm.requestSubmit() })">Kumpulkan Presentasi</button></div>
     </form>
 </div>
 @endsection

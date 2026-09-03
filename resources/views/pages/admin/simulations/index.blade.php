@@ -4,8 +4,8 @@
 <x-common.page-breadcrumb pageTitle="Bank Simulasi" />
 
 
-<div class="mb-5 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-700 dark:border-brand-500/30 dark:bg-brand-500/10 dark:text-brand-300">
-    Empat simulasi merupakan katalog tetap. Admin hanya perlu memperbarui materi dan durasi; jenis simulasi tidak perlu dibuat ulang.
+<div class="mb-5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300">
+    Kelola materi dan durasi untuk setiap rangkaian simulasi assessment.
 </div>
 
 <div class="space-y-4">
@@ -25,7 +25,7 @@
                         @php($scenario = $items->firstWhere('simulation_package', $package))
                         <div class="flex flex-col gap-3 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
                             <div><p class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ $meta['label'] }}</p><p class="mt-0.5 text-xs text-gray-500">{{ $meta['audience'] }} · {{ $scenario?->materialPages->count() ?? 0 }} materi PDF · {{ $scenario?->duration_minutes ?? 60 }} menit</p></div>
-                            @if($scenario)<a href="{{ route('admin.simulations.edit', $scenario) }}" class="crud-btn-soft-neutral">Edit Materi</a>@endif
+                            @if($scenario)<a href="{{ route('admin.simulations.edit', $scenario) }}" class="crud-btn-soft-brand">Edit Materi</a>@endif
                         </div>
                     @endforeach
                 </div>

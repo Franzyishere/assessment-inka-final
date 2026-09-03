@@ -1,0 +1,9 @@
+@extends('layouts.app')
+@section('content')
+<x-common.page-breadcrumb :pageTitle="'PAPI '.$version->version" />
+<div class="space-y-6">
+    <div class="grid gap-4 sm:grid-cols-3"><div class="rounded-2xl border border-gray-200 bg-white p-5"><p class="text-sm text-gray-500">Soal</p><p class="mt-2 text-3xl font-semibold">{{ $version->questions_count }}/90</p></div><div class="rounded-2xl border border-gray-200 bg-white p-5"><p class="text-sm text-gray-500">Pilihan Jawaban</p><p class="mt-2 text-3xl font-semibold">{{ $optionCount }}/180</p></div><div class="rounded-2xl border border-gray-200 bg-white p-5"><p class="text-sm text-gray-500">Kunci Skor</p><p class="mt-2 text-3xl font-semibold">{{ $mappingCount }}/180</p></div></div>
+    <div class="rounded-2xl border border-gray-200 bg-white p-5"><h2 class="font-semibold text-gray-900">Instrumen PAPI Kostick INKA</h2><p class="mt-1 text-sm text-gray-500">Instrumen ini berlaku untuk seluruh batch rekrutmen.</p><div class="mt-5 rounded-xl bg-success-50 p-4 text-sm font-medium text-success-800">Instrumen telah diverifikasi dan siap digunakan.</div></div>
+    <div class="rounded-2xl border border-gray-200 bg-white"><div class="border-b border-gray-200 px-5 py-4"><h2 class="font-semibold">Daftar Soal</h2></div><div class="max-h-[600px] overflow-auto"><table class="min-w-full divide-y divide-gray-200"><tbody class="divide-y divide-gray-100">@forelse($version->questions->sortBy('number') as $question)<tr><td class="w-16 px-5 py-4 align-top font-semibold">{{ $question->number }}</td><td class="px-5 py-4 text-sm"><p><span class="font-semibold">A.</span> {{ $question->options->firstWhere('code','A')?->statement }}</p><p class="mt-2"><span class="font-semibold">B.</span> {{ $question->options->firstWhere('code','B')?->statement }}</p></td></tr>@empty<tr><td class="px-5 py-12 text-center text-sm text-gray-500">Belum ada soal pada versi ini.</td></tr>@endforelse</tbody></table></div></div>
+</div>
+@endsection

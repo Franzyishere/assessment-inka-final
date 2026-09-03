@@ -85,7 +85,7 @@ class DashboardController extends Controller
 
     public function placeholder(Request $request): View
     {
-        $title = (string) $request->route()->getDefaults()['pageTitle'];
+        $title = (string) ($request->route()->defaults['pageTitle'] ?? 'Layanan Rekrutmen');
 
         return view('pages.placeholder', [
             'title' => $title,

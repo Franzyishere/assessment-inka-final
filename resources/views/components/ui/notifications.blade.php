@@ -76,3 +76,20 @@
         @endforeach
     </div>
 @endif
+
+<div
+    x-data="{ toasts: [], add(event) { const detail = event.detail || {}; const id = Date.now() + Math.random(); this.toasts.push({ id, type: detail.type || 'info', title: detail.title || (detail.type === 'error' ? 'Proses gagal' : 'Informasi'), message: detail.message || 'Proses selesai.' }); setTimeout(() => this.remove(id), detail.duration || 5000) }, remove(id) { this.toasts = this.toasts.filter(item => item.id !== id) } }"
+    @notify.window="add($event)"
+    class="pointer-events-none fixed inset-x-4 top-4 z-[100000] flex flex-col items-end gap-3 sm:left-auto sm:right-6 sm:top-6 sm:w-full sm:max-w-sm"
+    aria-live="polite"
+>
+    <template x-for="toast in toasts" :key="toast.id">
+        <div x-transition class="pointer-events-auto relative w-full overflow-hidden rounded-2xl border border-gray-200 bg-white/95 p-4 shadow-theme-xl backdrop-blur">
+            <div class="absolute inset-y-0 left-0 w-1" :class="toast.type === 'error' ? 'bg-error-500' : (toast.type === 'success' ? 'bg-success-500' : (toast.type === 'warning' ? 'bg-warning-500' : 'bg-brand-500'))"></div>
+            <div class="flex items-start gap-3 pl-2">
+                <div class="min-w-0 flex-1"><p class="text-sm font-semibold text-gray-900" x-text="toast.title"></p><p class="mt-1 text-sm leading-5 text-gray-600" x-text="toast.message"></p></div>
+                <button type="button" @click="remove(toast.id)" class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600" aria-label="Tutup notifikasi"><svg class="size-4" viewBox="0 0 20 20" fill="none"><path d="m6 6 8 8m0-8-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+            </div>
+        </div>
+    </template>
+</div>

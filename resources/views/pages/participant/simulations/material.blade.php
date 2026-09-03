@@ -1,9 +1,10 @@
-@extends('layouts.app')
+@extends('layouts.fullscreen-layout')
 
 @section('content')
-<div x-data="antiCheatSession('{{ $session->expires_at?->toIso8601String() }}', '{{ route('peserta-assessment.simulations.events.store', $programSimulation) }}')" class="mx-auto max-w-5xl space-y-5">
-    <div x-show="!secureMode" x-cloak class="fixed inset-0 z-99998 flex items-center justify-center bg-gray-900/80 p-4 backdrop-blur-sm"><div class="w-full max-w-md rounded-2xl bg-white p-6 text-center shadow-xl dark:bg-gray-900"><h2 class="text-lg font-semibold text-gray-800 dark:text-white/90">Aktifkan Mode Fullscreen</h2><p class="mt-2 text-sm leading-6 text-gray-500">Assessment wajib dikerjakan dalam mode fullscreen. Jika keluar dari fullscreen, halaman pengerjaan akan dikunci sampai fullscreen diaktifkan kembali.</p><p x-show="fullscreenError" x-text="fullscreenError" class="mt-3 text-sm text-error-500"></p><button type="button" @click="enableFullscreen" class="mt-6 w-full rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600">Masuk Fullscreen & Lanjutkan</button></div></div>
-    <div class="sticky top-20 z-30 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-theme-sm dark:border-gray-800 dark:bg-gray-900">
+<main class="min-h-screen bg-gray-50 p-3 sm:p-5 lg:p-6">
+<div x-data="antiCheatSession('{{ $session->expires_at?->toIso8601String() }}', '{{ route('peserta-assessment.simulations.events.store', $programSimulation) }}')" class="mx-auto min-w-0 max-w-7xl space-y-5">
+    <div x-show="!secureMode" x-cloak class="fixed inset-0 z-99998 flex items-center justify-center bg-gray-900/90 p-4 backdrop-blur-md"><div class="w-full max-w-md rounded-2xl bg-white p-6 text-center shadow-xl"><h2 class="text-lg font-semibold text-gray-800" x-text="violations ? 'Halaman Pengerjaan Dikunci' : 'Aktifkan Mode Fullscreen'"></h2><p class="mt-2 text-sm leading-6 text-gray-500" x-text="securityMessage"></p><div x-show="violations > 0" class="mt-4 rounded-xl px-4 py-3 text-sm font-medium" :class="violations >= 3 ? 'bg-error-50 text-error-700' : 'bg-warning-50 text-warning-700'"><span x-text="violations"></span> aktivitas tercatat<span x-show="violations >= 3"> · perlu ditinjau asesor</span></div><p x-show="fullscreenError" x-text="fullscreenError" class="mt-3 text-sm text-error-500"></p><button type="button" @click="enableFullscreen" class="mt-6 w-full rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600">Kembali ke Fullscreen & Lanjutkan</button></div></div>
+    <div class="sticky top-3 z-30 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-theme-sm dark:border-gray-800 dark:bg-gray-900">
         <div class="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             <div class="min-w-0">
                 <div class="flex items-center gap-2"><p class="text-xs font-medium uppercase text-brand-500">Halaman {{ $pageNumber }} dari {{ $pageCount }}</p><span class="h-1 w-1 rounded-full bg-gray-300"></span><p class="text-xs text-gray-500">{{ $programSimulation->scenario->duration_minutes }} menit</p></div>
@@ -24,24 +25,25 @@
         <div class="h-1 bg-gray-100 dark:bg-gray-800"><div class="h-full transition-all duration-1000" :class="remaining <= 300 ? 'bg-error-500' : (remaining <= 900 ? 'bg-warning-500' : 'bg-brand-500')" :style="`width: ${Math.max(0, Math.min(100, (remaining / initialRemaining) * 100))}%`"></div></div>
     </div>
     <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-        <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-800"><div><span class="text-xs font-medium text-brand-500">Materi {{ $pageNumber }}</span><h2 class="mt-1 font-semibold text-gray-800 dark:text-white/90">Uraian Simulasi</h2></div><a target="_blank" href="{{ route('peserta-assessment.simulations.material.pdf', [$programSimulation, $material]) }}" class="text-sm font-medium text-brand-500">Buka PDF di tab baru</a></div>
-        <iframe title="Materi PDF {{ $pageNumber }}" src="{{ route('peserta-assessment.simulations.material.pdf', [$programSimulation, $material]) }}#toolbar=1&navpanes=0" class="h-[72vh] min-h-[640px] w-full bg-gray-100"></iframe>
+        <div class="flex items-center justify-between gap-4 border-b border-gray-200 px-5 py-4 dark:border-gray-800"><div><span class="text-xs font-medium text-brand-500">Materi {{ $pageNumber }}</span><h2 class="mt-1 font-semibold text-gray-800 dark:text-white/90">Uraian Simulasi</h2></div><span class="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 dark:bg-white/5 dark:text-gray-300"><svg class="size-3.5" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M6.5 9V6.75a3.5 3.5 0 0 1 7 0V9M5.75 9h8.5v7h-8.5V9Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Hanya baca</span></div>
+        <iframe title="Materi PDF {{ $pageNumber }} — hanya baca" src="{{ route('peserta-assessment.simulations.material.pdf', [$programSimulation, $material]) }}#toolbar=0&navpanes=0&scrollbar=1&view=FitH" class="h-[72vh] min-h-[640px] w-full select-none bg-gray-100" referrerpolicy="same-origin"></iframe>
         @if($material->content)<div class="border-t border-gray-200 px-5 py-4 text-sm text-gray-500 dark:border-gray-800">{{ $material->content }}</div>@endif
     </div>
-    <form method="POST" action="{{ route('peserta-assessment.simulations.material.save', [$programSimulation, $pageNumber]) }}" class="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]" @if($pageCount === 1) onsubmit="return confirm('Simpan dan kumpulkan jawaban sekarang? Setelah dikumpulkan, jawaban tidak dapat diubah.')" @endif>
+    <form x-ref="materialForm" method="POST" action="{{ route('peserta-assessment.simulations.material.save', [$programSimulation, $pageNumber]) }}" class="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
         @csrf @method('PUT')
         <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Jawaban Materi {{ $pageNumber }} @if($material->is_required)<span class="text-error-500">*</span>@endif</label>
-        <textarea name="response" rows="10" @required($material->is_required) class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden dark:border-gray-700 dark:text-white/90">{{ old('response', $response) }}</textarea>
+        <x-forms.rich-text-editor name="response" :value="old('response', $response)" :required="$material->is_required" />
         @error('response')<p class="mt-1 text-xs text-error-500">{{ $message }}</p>@enderror
         <div class="mt-5 flex items-center justify-between">
             <a href="{{ route('peserta-assessment.simulations.material', [$programSimulation, max(1, $pageNumber - 1)]) }}" class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 dark:border-gray-700 dark:text-gray-300">Sebelumnya</a>
-            <button @if($pageCount === 1) name="submit_after_save" value="1" @endif class="rounded-lg px-5 py-2.5 text-sm font-medium text-white {{ $pageCount === 1 ? 'bg-success-500 hover:bg-success-600' : 'bg-brand-500 hover:bg-brand-600' }}">{{ $pageCount === 1 ? 'Simpan & Kumpulkan' : ($pageNumber < $pageCount ? 'Simpan & Berikutnya' : 'Simpan Jawaban') }}</button>
+            <button @if($pageCount === 1) x-ref="singleSubmit" type="submit" name="submit_after_save" value="1" @click.prevent="$dispatch('confirm-dialog', { title: 'Simpan dan kumpulkan?', message: 'Jawaban tidak dapat diubah setelah dikumpulkan.', confirmLabel: 'Ya, Kumpulkan', onConfirm: () => $refs.materialForm.requestSubmit($refs.singleSubmit) })" @endif class="rounded-lg px-5 py-2.5 text-sm font-medium text-white {{ $pageCount === 1 ? 'bg-success-500 hover:bg-success-600' : 'bg-brand-500 hover:bg-brand-600' }}">{{ $pageCount === 1 ? 'Simpan & Kumpulkan' : ($pageNumber < $pageCount ? 'Simpan & Berikutnya' : 'Simpan Jawaban') }}</button>
         </div>
     </form>
     @if ($pageNumber === $pageCount && $pageCount > 1)
-        <form method="POST" action="{{ route('peserta-assessment.simulations.submit', $programSimulation) }}" class="flex justify-end" onsubmit="return confirm('Setelah dikumpulkan, jawaban tidak dapat diubah. Lanjutkan?')">@csrf<button class="rounded-lg bg-success-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-success-600">Kumpulkan Simulasi</button></form>
+        <form x-ref="finalSimulationForm" method="POST" action="{{ route('peserta-assessment.simulations.submit', $programSimulation) }}" class="flex justify-end">@csrf<button type="button" class="rounded-lg bg-success-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-success-600" @click="$dispatch('confirm-dialog', { title: 'Kumpulkan simulasi?', message: 'Pastikan seluruh jawaban sudah tersimpan. Jawaban tidak dapat diubah setelah dikumpulkan.', confirmLabel: 'Ya, Kumpulkan', onConfirm: () => $refs.finalSimulationForm.requestSubmit() })">Kumpulkan Simulasi</button></form>
     @endif
 </div>
+</main>
 @endsection
 
 @push('scripts')
@@ -57,6 +59,7 @@
             fullscreenError: '',
             sequence: 0,
             lastEvents: {},
+            lockReason: '',
             get formattedTime() {
                 const hours = Math.floor(this.remaining / 3600);
                 const minutes = Math.floor((this.remaining % 3600) / 60);
@@ -73,15 +76,25 @@
                 if (this.remaining <= 300) return 'Segera berakhir';
                 return 'Sisa waktu';
             },
+            get securityMessage() {
+                if (!this.fullscreenActivated) return 'Assessment wajib dikerjakan dalam mode fullscreen.';
+                if (this.lockReason === 'tab_hidden') return 'Perpindahan tab terdeteksi. Timer tetap berjalan dan materi disembunyikan sampai Anda melanjutkan dalam fullscreen.';
+                return 'Mode fullscreen terhenti. Timer tetap berjalan dan materi disembunyikan sampai fullscreen diaktifkan kembali.';
+            },
             init() {
                 setInterval(() => { this.remaining = Math.max(0, Math.floor((this.expiresAt - Date.now()) / 1000)) }, 1000);
                 document.addEventListener('fullscreenchange', () => {
-                    this.secureMode = !!document.fullscreenElement;
-                    if (this.fullscreenActivated && !document.fullscreenElement) this.report('fullscreen_exit');
+                    if (this.fullscreenActivated && !document.fullscreenElement) {
+                        this.secureMode = false;
+                        setTimeout(() => { if (!document.hidden) { this.lockReason = 'fullscreen_exit'; this.report('fullscreen_exit'); } }, 250);
+                    }
+                });
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden && this.fullscreenActivated) { this.secureMode = false; this.lockReason = 'tab_hidden'; this.report('tab_hidden'); }
                 });
             },
             async enableFullscreen() {
-                try { await document.documentElement.requestFullscreen(); this.fullscreenActivated = true; this.secureMode = true; this.fullscreenError = ''; }
+                try { if (!document.fullscreenElement) await document.documentElement.requestFullscreen(); this.fullscreenActivated = true; this.secureMode = true; this.lockReason = ''; this.fullscreenError = ''; }
                 catch (_) { this.fullscreenError = 'Browser menolak fullscreen. Izinkan fullscreen pada pengaturan situs lalu coba kembali.'; this.report('fullscreen_denied'); }
             },
             report(eventType) {

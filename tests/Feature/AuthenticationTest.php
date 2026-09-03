@@ -3,7 +3,13 @@
 use App\Models\User;
 
 test('login page is available to guests', function () {
-    $this->get(route('login'))->assertOk();
+    $this->get(route('login'))
+        ->assertOk()
+        ->assertSee('property="og:title"', false)
+        ->assertSee('property="og:description"', false)
+        ->assertSee('property="og:image"', false)
+        ->assertSee(asset('images/logo/imagesinka.png'), false)
+        ->assertSee('name="twitter:card" content="summary_large_image"', false);
 });
 
 test('user can authenticate with email and password', function () {

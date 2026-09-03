@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'hris' => [
+        'base_url' => env('HRIS_BASE_URL'),
+        'token' => env('HRIS_API_TOKEN'),
+        'timeout' => (int) env('HRIS_TIMEOUT', 15),
+    ],
+
 ];

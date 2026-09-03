@@ -29,11 +29,110 @@ class MenuHelper
 
     public static function getMenuGroups(): array
     {
+        $user = auth()->user();
+
+        if (! $user) return [];
+
+        return match ($user->role) {
+            'admin' => self::adminGroups(),
+            'super_admin' => self::superAdminGroups(),
+            'asesor' => self::assessorGroups(),
+            'peserta_assessment' => self::assessmentParticipantGroups(),
+            'peserta_rekrutmen' => self::recruitmentParticipantGroups(),
+            default => [['title' => 'Menu', 'items' => self::getMainNavItems()]],
+        };
+    }
+
+    private static function adminGroups(): array
+    {
         return [
-            [
-                'title' => 'Menu',
-                'items' => self::getMainNavItems(),
-            ],
+            ['title' => 'Umum', 'items' => [
+                self::item('pages', 'Portal Utama', 'portal.index'),
+                self::item('dashboard', 'Dashboard', 'admin.dashboard'),
+            ]],
+            ['title' => 'Assessment', 'items' => [
+                self::item('pages', 'Program', 'admin.assessment-programs.index'),
+                self::item('forms', 'Bank Simulasi', 'admin.simulations.index'),
+                self::item('user-profile', 'Peserta', 'admin.participants.index'),
+                self::item('task', 'Penugasan Asesor', 'admin.assessor-assignments.index'),
+                self::item('charts', 'Monitoring', 'admin.monitoring.index'),
+            ]],
+            ['title' => 'Recruitment', 'items' => [
+                self::item('tables', 'Batch Rekrutmen', 'admin.recruitment.index'),
+                self::item('charts', 'Hasil Psikotes', 'admin.recruitment-results.index'),
+            ]],
+        ];
+    }
+
+    private static function superAdminGroups(): array
+    {
+        return [
+            ['title' => 'Umum', 'items' => [
+                self::item('pages', 'Portal Utama', 'portal.index'),
+                self::item('dashboard', 'Dashboard Sistem', 'super-admin.dashboard'),
+            ]],
+            ['title' => 'Sistem', 'items' => [
+                self::item('user-profile', 'Pengguna', 'super-admin.users.index'),
+                self::item('authentication', 'Role & Hak Akses', 'super-admin.roles.index'),
+                self::item('tables', 'Audit Log', 'super-admin.audit-logs.index'),
+            ]],
+            ['title' => 'Assessment', 'items' => [
+                self::item('pages', 'Program', 'admin.assessment-programs.index'),
+                self::item('forms', 'Bank Simulasi', 'admin.simulations.index'),
+                self::item('user-profile', 'Peserta', 'admin.participants.index'),
+                self::item('task', 'Penugasan Asesor', 'admin.assessor-assignments.index'),
+                self::item('charts', 'Monitoring', 'admin.monitoring.index'),
+            ]],
+            ['title' => 'Recruitment', 'items' => [
+                self::item('tables', 'Batch Rekrutmen', 'admin.recruitment.index'),
+                self::item('charts', 'Hasil Psikotes', 'admin.recruitment-results.index'),
+            ]],
+        ];
+    }
+
+    private static function assessorGroups(): array
+    {
+        return [
+            ['title' => 'Umum', 'items' => [
+                self::item('pages', 'Portal Utama', 'portal.index'),
+                self::item('dashboard', 'Dashboard', 'asesor.dashboard'),
+            ]],
+            ['title' => 'Assessment', 'items' => [
+                self::item('forms', 'Simulasi Ditugaskan', 'asesor.simulations.index'),
+                self::item('user-profile', 'Peserta', 'asesor.participants.index'),
+                self::item('charts', 'Monitoring', 'asesor.monitoring.index'),
+                self::item('task', 'Penilaian & Rekomendasi', 'asesor.reviews.index'),
+            ]],
+        ];
+    }
+
+    private static function assessmentParticipantGroups(): array
+    {
+        return [
+            ['title' => 'Umum', 'items' => [
+                self::item('pages', 'Portal Utama', 'portal.index'),
+                self::item('dashboard', 'Dashboard', 'peserta-assessment.dashboard'),
+            ]],
+            ['title' => 'Assessment', 'items' => [
+                self::item('forms', 'Simulasi Saya', 'peserta-assessment.simulations.index'),
+                self::item('calendar', 'Jadwal Assessment', 'peserta-assessment.schedule.index'),
+                self::item('task', 'Hasil & Rekomendasi', 'peserta-assessment.results.index'),
+            ]],
+        ];
+    }
+
+    private static function recruitmentParticipantGroups(): array
+    {
+        return [
+            ['title' => 'Umum', 'items' => [
+                self::item('pages', 'Portal Utama', 'portal.index'),
+                self::item('dashboard', 'Dashboard', 'peserta-rekrutmen.dashboard'),
+            ]],
+            ['title' => 'Recruitment', 'items' => [
+                self::item('forms', 'Ujian Saya', 'peserta-rekrutmen.exams.index'),
+                self::item('calendar', 'Tahapan Seleksi', 'peserta-rekrutmen.stages.index'),
+                self::item('task', 'Hasil Seleksi', 'peserta-rekrutmen.results.index'),
+            ]],
         ];
     }
 
@@ -45,6 +144,13 @@ class MenuHelper
             self::item('user-profile', 'Manajemen Pengguna', 'super-admin.users.index'),
             self::item('authentication', 'Role & Hak Akses', 'super-admin.roles.index'),
             self::item('tables', 'Audit Log', 'super-admin.audit-logs.index'),
+            self::item('pages', 'Program Assessment', 'admin.assessment-programs.index'),
+            self::item('forms', 'Bank Simulasi', 'admin.simulations.index'),
+            self::item('user-profile', 'Peserta Assessment', 'admin.participants.index'),
+            self::item('task', 'Penugasan Asesor', 'admin.assessor-assignments.index'),
+            self::item('charts', 'Monitoring', 'admin.monitoring.index'),
+            self::item('tables', 'Rekrutmen', 'admin.recruitment.index'),
+            self::item('charts', 'Hasil Psikotes', 'admin.recruitment-results.index'),
         ];
     }
 
@@ -59,6 +165,7 @@ class MenuHelper
             self::item('task', 'Penugasan Asesor', 'admin.assessor-assignments.index'),
             self::item('charts', 'Monitoring', 'admin.monitoring.index'),
             self::item('tables', 'Rekrutmen', 'admin.recruitment.index'),
+            self::item('charts', 'Hasil Psikotes', 'admin.recruitment-results.index'),
         ];
     }
 

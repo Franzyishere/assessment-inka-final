@@ -22,10 +22,29 @@ test('admin can view assessment program and simulation management pages', functi
 
     $this->actingAs($admin)->get(route('admin.assessment-programs.index'))->assertOk();
     $this->actingAs($admin)->get(route('admin.assessment-programs.create'))->assertOk();
-    $this->actingAs($admin)->get(route('admin.simulations.index'))->assertOk()->assertSee('Empat simulasi merupakan katalog tetap')->assertDontSee('Buat Simulasi');
+    $this->actingAs($admin)->get(route('admin.simulations.index'))->assertOk()->assertSee('Kelola materi dan durasi')->assertDontSee('Buat Simulasi');
     expect(SimulationScenario::count())->toBe(9)
         ->and(Route::has('admin.simulations.create'))->toBeFalse()
         ->and(Route::has('admin.simulations.destroy'))->toBeFalse();
+});
+
+test('admin can prepare a manual assessment participant for future hris matching', function () {
+    $admin = User::query()->where('role', User::ROLE_ADMIN)->firstOrFail();
+
+    $this->actingAs($admin)->post(route('admin.participants.store'), [
+        'name' => 'Peserta HRIS Future',
+        'email' => 'future.hris@inka.test',
+        'employee_number' => 'NIPP-2026-001',
+        'password' => 'password123',
+        'password_confirmation' => 'password123',
+    ])->assertRedirect(route('admin.participants.index'));
+
+    $participant = User::where('email', 'future.hris@inka.test')->firstOrFail();
+    expect($participant->employee_number)->toBe('NIPP-2026-001')
+        ->and($participant->identity_source)->toBe('manual');
+
+    $this->actingAs($admin)->get(route('admin.participants.index', ['search' => 'NIPP-2026-001']))
+        ->assertOk()->assertSee('Peserta HRIS Future')->assertSee('NIPP-2026-001');
 });
 
 test('admin can create and update an assessment program', function () {

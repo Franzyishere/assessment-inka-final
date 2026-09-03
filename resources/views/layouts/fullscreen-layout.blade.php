@@ -8,6 +8,8 @@
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon-inka-32.svg') }}?v={{ filemtime(public_path('favicon-inka-32.svg')) }}">
 
     <title>{{ $title ?? 'Dashboard' }} | INKA Talent Management System</title>
+    <x-layout.open-graph :title="$title ?? 'Masuk'" />
+    @stack('meta')
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -72,6 +74,7 @@ const checkMobile = () => {
 window.addEventListener('resize', checkMobile);">
 
     <x-ui.notifications />
+    <x-ui.confirm-dialog />
 
     {{-- preloader --}}
     <x-common.preloader/>

@@ -92,6 +92,11 @@ test('active participant session records supported anti cheat events', function 
     expect(SimulationSessionEvent::firstOrFail()->event_type)->toBe('fullscreen_exit');
 
     $this->actingAs($participant)->postJson(route('peserta-assessment.simulations.events.store', $programSimulation), [
+        'event_type' => 'tab_hidden', 'client_time' => now()->toISOString(), 'visibility_state' => 'hidden',
+    ])->assertCreated()->assertJson(['recorded' => true, 'violation_count' => 2]);
+    expect(SimulationSessionEvent::where('event_type', 'tab_hidden')->exists())->toBeTrue();
+
+    $this->actingAs($participant)->postJson(route('peserta-assessment.simulations.events.store', $programSimulation), [
         'event_type' => 'unsupported_event',
     ])->assertUnprocessable();
 });

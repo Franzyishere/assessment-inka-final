@@ -6,7 +6,7 @@ test('guest cannot open talent portal', function () {
     $this->get(route('portal.index'))->assertRedirect(route('login'));
 });
 
-test('assessment user sees active assessment module and locked future modules', function (string $role) {
+test('assessment user sees assessment and recruitment access based on role', function (string $role) {
     $user = User::factory()->create(['role' => $role]);
 
     $this->actingAs($user)
@@ -17,7 +17,8 @@ test('assessment user sees active assessment module and locked future modules', 
         ->assertSee(route($user->dashboardRouteName()))
         ->assertSee('Rekrutmen')
         ->assertDontSee('Rekrutmen & Psikotes', false)
-        ->assertSee('Coming Soon')
+        ->when(in_array($role, [User::ROLE_SUPER_ADMIN, User::ROLE_ADMIN], true), fn ($response) => $response->assertSee('Buka Recruitment')->assertSee(route('admin.recruitment.index')))
+        ->when(! in_array($role, [User::ROLE_SUPER_ADMIN, User::ROLE_ADMIN], true), fn ($response) => $response->assertDontSee('Buka Recruitment'))
         ->assertDontSee('Modul pengelolaan dan pelaksanaan tes psikologi');
 })->with([
     User::ROLE_SUPER_ADMIN,
@@ -33,7 +34,9 @@ test('user without assessment role cannot open assessment from portal', function
         ->get(route('portal.index'))
         ->assertOk()
         ->assertSee('Akses Tidak Tersedia')
-        ->assertDontSee('Buka Assessment');
+        ->assertDontSee('Buka Assessment')
+        ->assertSee('Buka Recruitment')
+        ->assertSee(route('peserta-rekrutmen.exams.index'));
 });
 
 test('portal descriptions follow the signed in user role', function (string $role, string $assessmentText, string $recruitmentText) {

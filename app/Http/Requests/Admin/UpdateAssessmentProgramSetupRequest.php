@@ -11,7 +11,7 @@ class UpdateAssessmentProgramSetupRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->hasRole(User::ROLE_ADMIN) ?? false;
+        return $this->user()?->hasRole(User::ROLE_ADMIN, User::ROLE_SUPER_ADMIN) ?? false;
     }
 
     public function rules(): array

@@ -72,10 +72,10 @@
                 </div>
             </article>
 
-            <article class="flex min-h-[360px] flex-col overflow-hidden rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-md sm:p-7">
-                <div class="flex items-start justify-between gap-4"><span class="flex size-14 items-center justify-center rounded-2xl bg-[#fff6e8] text-[#d97706]"><svg class="size-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 7V4h8v3m-11 4h14m-1-4H6a2 2 0 0 0-2 2v10h16V9a2 2 0 0 0-2-2Z"/><path d="M9 14h6m-6 3h4"/></svg></span><span class="rounded-full bg-warning-50 px-3 py-1 text-xs font-semibold text-warning-700">Segera Hadir</span></div>
+            <article class="group flex min-h-[360px] flex-col overflow-hidden rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-md transition duration-300 hover:-translate-y-1 hover:shadow-2xl sm:p-7">
+                <div class="flex items-start justify-between gap-4"><span class="flex size-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-600"><svg class="size-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 7V4h8v3m-11 4h14m-1-4H6a2 2 0 0 0-2 2v10h16V9a2 2 0 0 0-2-2Z"/><path d="M9 14h6m-6 3h4"/></svg></span>@if($recruitmentAvailable)<span class="inline-flex items-center gap-1.5 rounded-full bg-success-50 px-3 py-1 text-xs font-semibold text-success-700"><span class="size-1.5 rounded-full bg-success-500"></span>Aktif</span>@else<span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-500">Tidak Ada Akses</span>@endif</div>
                 <div class="mt-7"><p class="text-xs font-semibold uppercase tracking-[0.16em] text-[#d97706]"></p><h2 class="mt-2 text-2xl font-bold text-gray-900">Recruitment</h2><p class="mt-3 text-sm leading-6 text-gray-500">{{ $recruitmentDescription }}</p></div>
-                <div class="mt-auto pt-8"><span class="flex w-full cursor-not-allowed items-center justify-center rounded-xl bg-gray-100 px-5 py-3.5 text-sm font-semibold text-gray-400">Coming Soon</span></div>
+                <div class="mt-auto pt-8">@if($recruitmentAvailable)<a href="{{ $recruitmentUrl }}" class="flex w-full items-center justify-between rounded-xl bg-brand-600 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-brand-700"><span>Buka Recruitment</span><span aria-hidden="true">→</span></a>@else<span class="flex w-full cursor-not-allowed items-center justify-center rounded-xl bg-gray-100 px-5 py-3.5 text-sm font-semibold text-gray-400">Akses Tidak Tersedia</span>@endif</div>
             </article>
         </section>
 

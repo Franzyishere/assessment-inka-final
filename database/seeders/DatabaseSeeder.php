@@ -17,6 +17,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(PapiDimensionSeeder::class);
+        if (! app()->environment('testing')) {
+            $this->call(PapiStaticMasterSeeder::class);
+        }
+
         $users = [
             ['name' => 'Super Administrator', 'email' => 'superadmin@inka.co.id', 'role' => User::ROLE_SUPER_ADMIN],
             ['name' => 'Administrator HCGA', 'email' => 'admin@inka.co.id', 'role' => User::ROLE_ADMIN],

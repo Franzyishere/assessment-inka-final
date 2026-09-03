@@ -25,13 +25,13 @@
 
     <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div><h2 class="font-semibold text-gray-800 dark:text-white/90">{{ $program->name }}</h2><p class="mt-1 text-sm text-gray-500">Tentukan tim asesor dan peserta. Empat simulasi bawaan digunakan otomatis.</p></div>
-            <div class="rounded-lg bg-brand-50 px-4 py-2 text-sm font-medium text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">4 simulasi otomatis</div>
+            <div><h2 class="font-semibold text-gray-800 dark:text-white/90">{{ $program->name }}</h2><p class="mt-1 text-sm text-gray-500">Atur tim asesor dan peserta untuk pelaksanaan program.</p></div>
+            <div class="rounded-lg bg-brand-50 px-4 py-2 text-sm font-medium text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">4 Simulasi</div>
         </div>
     </div>
 
     <section class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
-        <div class="mb-4 flex items-center gap-3"><span class="inline-flex size-7 items-center justify-center rounded-full bg-success-500 text-sm font-semibold text-white">✓</span><div><h3 class="font-semibold text-gray-800 dark:text-white/90">Simulasi Program Otomatis</h3><p class="mt-1 text-sm text-gray-500">PA, LGD, Simulasi 3 sesuai kategori, dan Presentasi langsung dipasang saat pengaturan disimpan.</p></div></div>
+        <div class="mb-4 flex items-center gap-3"><span class="inline-flex size-7 items-center justify-center rounded-full bg-success-500 text-sm font-semibold text-white">✓</span><div><h3 class="font-semibold text-gray-800 dark:text-white/90">Rangkaian Simulasi</h3><p class="mt-1 text-sm text-gray-500">Problem Analysis, Leaderless Group Discussion, Simulasi 3, dan Presentasi.</p></div></div>
         <div class="grid grid-cols-2 gap-2 md:grid-cols-4">@foreach($scenarios->unique('simulation_type_id') as $scenario)<div class="rounded-lg bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 dark:bg-white/5 dark:text-gray-300">{{ $scenario->type->name }}</div>@endforeach</div>
     </section>
 

@@ -14,10 +14,10 @@ class SimulationScenario extends Model
     public const SIMULATION_THREE_PACKAGES = [
         'ci_1' => ['label' => 'Critical Incident 1', 'audience' => 'Golongan I ke II, Spesialis Pratama, dan SPV'],
         'ci_2' => ['label' => 'Critical Incident 2', 'audience' => 'Golongan II ke III dan Spesialis Muda'],
-        'ci_3' => ['label' => 'Critical Incident 3', 'audience' => 'Golongan III ke IV atau pilihan Spesialis Madya'],
+        'ci_3' => ['label' => 'Critical Incident 3', 'audience' => 'Golongan III ke IV atau penetapan asesor untuk Spesialis Madya'],
         'in_tray_1' => ['label' => 'In-Tray 1', 'audience' => 'Promosi M'],
         'in_tray_2' => ['label' => 'In-Tray 2', 'audience' => 'Promosi SM'],
-        'in_tray_3' => ['label' => 'In-Tray 3', 'audience' => 'Pilihan Spesialis Madya'],
+        'in_tray_3' => ['label' => 'In-Tray 3', 'audience' => 'Penetapan asesor untuk Spesialis Madya'],
     ];
 
     protected $fillable = ['simulation_type_id', 'assessment_category', 'simulation_package', 'code', 'title', 'description', 'participant_instructions', 'assessor_guidance', 'duration_minutes', 'status', 'created_by'];

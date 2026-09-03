@@ -977,3 +977,26 @@ pre[class*='language-'] {
     margin-right: -60px !important;
   }
 }
+@layer components {
+  .editor-tool-btn {
+    @apply inline-flex h-9 min-w-9 items-center justify-center rounded-lg border border-transparent px-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300 hover:bg-white disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .tiptap-answer-surface {
+    @apply min-h-72 max-w-full overflow-x-auto break-words px-5 py-4 text-sm leading-7 text-gray-800 outline-none;
+  }
+
+  .tiptap-answer-surface p { @apply my-2; }
+  .tiptap-answer-surface ul { @apply my-3 list-disc pl-6; }
+  .tiptap-answer-surface ol { @apply my-3 list-decimal pl-6; }
+  .tiptap-answer-surface blockquote { @apply my-3 border-l-4 border-gray-300 pl-4 text-gray-600; }
+  .tiptap-answer-surface table { @apply my-4 w-full max-w-full border-collapse; }
+  .tiptap-answer-surface th { @apply border border-gray-300 bg-gray-100 px-3 py-2 text-left font-semibold; }
+  .tiptap-answer-surface td { @apply min-w-20 border border-gray-300 px-3 py-2 align-top; }
+  .tiptap-answer-surface .selectedCell { @apply bg-brand-50; }
+  .tiptap-answer-content ul { @apply my-3 list-disc pl-6; }
+  .tiptap-answer-content ol { @apply my-3 list-decimal pl-6; }
+  .tiptap-answer-content table { @apply my-4 w-full border-collapse; }
+  .tiptap-answer-content th { @apply border border-gray-300 bg-gray-100 px-3 py-2 text-left font-semibold; }
+  .tiptap-answer-content td { @apply border border-gray-300 px-3 py-2 align-top; }
+}

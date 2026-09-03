@@ -92,10 +92,16 @@
         return classes[status] || '';
     },
     deleteRow(id) {
-        if (confirm('Are you sure you want to delete this order?')) {
-            this.tableRowData = this.tableRowData.filter(row => row.id !== id);
-            this.selectedRows = this.selectedRows.filter(rowId => rowId !== id);
-        }
+        window.dispatchEvent(new CustomEvent('confirm-dialog', { detail: {
+            title: 'Hapus data?',
+            message: 'Data yang dihapus tidak dapat dikembalikan.',
+            confirmLabel: 'Ya, Hapus',
+            tone: 'danger',
+            onConfirm: () => {
+                this.tableRowData = this.tableRowData.filter(row => row.id !== id);
+                this.selectedRows = this.selectedRows.filter(rowId => rowId !== id);
+            }
+        }}));
     }
 }">
     <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white pt-4 dark:border-white/[0.05] dark:bg-white/[0.03]">

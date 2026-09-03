@@ -13,11 +13,30 @@ use Illuminate\View\View;
 
 class AssessmentParticipantAccountController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        $search = trim((string) $request->query('search'));
+        $searchPattern = '%'.mb_strtolower($search).'%';
+        $source = $request->query('source');
+        $participantsQuery = User::query()
+            ->where('role', User::ROLE_PESERTA_ASSESSMENT)
+            ->when($search, fn ($query) => $query->where(fn ($nested) => $nested
+                ->whereRaw('LOWER(name) LIKE ?', [$searchPattern])
+                ->orWhereRaw('LOWER(email) LIKE ?', [$searchPattern])
+                ->orWhereRaw('LOWER(employee_number) LIKE ?', [$searchPattern])))
+            ->when(in_array($source, ['manual', 'hris'], true), fn ($query) => $query->where('identity_source', $source));
+
         return view('pages.admin.participants.index', [
             'title' => 'Peserta Assessment',
-            'participants' => User::where('role', User::ROLE_PESERTA_ASSESSMENT)->withCount('assessmentParticipations')->orderBy('name')->orderBy('id')->paginate(15),
+            'participants' => (clone $participantsQuery)->withCount('assessmentParticipations')->orderBy('name')->orderBy('id')->paginate(15)->withQueryString(),
+            'participantMetrics' => [
+                'total' => User::where('role', User::ROLE_PESERTA_ASSESSMENT)->count(),
+                'hris' => User::where('role', User::ROLE_PESERTA_ASSESSMENT)->where('identity_source', 'hris')->count(),
+                'manual' => User::where('role', User::ROLE_PESERTA_ASSESSMENT)->where('identity_source', 'manual')->count(),
+            ],
+            'hrisConfigured' => filled(config('services.hris.base_url')) && filled(config('services.hris.token')),
+            'search' => $search,
+            'source' => $source,
         ]);
     }
 
@@ -28,7 +47,7 @@ class AssessmentParticipantAccountController extends Controller
 
     public function store(StoreParticipantAccountRequest $request): RedirectResponse
     {
-        $participant = User::create([...$request->validated(), 'role' => User::ROLE_PESERTA_ASSESSMENT]);
+        $participant = User::create([...$request->validated(), 'role' => User::ROLE_PESERTA_ASSESSMENT, 'identity_source' => 'manual']);
         AuditLogger::record($request, 'participant.created', $participant, ['email' => $participant->email]);
 
         return to_route('admin.participants.index')->with('success', 'Akun peserta berhasil dibuat.');
@@ -45,6 +64,9 @@ class AssessmentParticipantAccountController extends Controller
     {
         abort_unless($participant->hasRole(User::ROLE_PESERTA_ASSESSMENT), 404);
         $data = $request->validated();
+        if ($participant->identity_source === 'hris') {
+            unset($data['name'], $data['email'], $data['employee_number']);
+        }
         if (empty($data['password'])) {
             unset($data['password']);
         }

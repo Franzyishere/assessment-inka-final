@@ -12,6 +12,7 @@ class UpdateParticipantAccountRequest extends StoreParticipantAccountRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($this->route('participant'))],
+            'employee_number' => ['nullable', 'string', 'max:100', Rule::unique('users')->ignore($this->route('participant'))],
             'password' => ['nullable', 'confirmed', Password::min(8)],
         ];
     }

@@ -10,10 +10,9 @@ use App\Models\SimulationSession;
 use App\Models\SimulationSessionEvent;
 use App\Models\SimulationSubmission;
 use App\Models\SimulationType;
-use App\Support\AuditLogger;
+use App\Support\RichTextSanitizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -70,53 +69,11 @@ class AssessmentSimulationController extends Controller
         ]);
     }
 
-    public function chooseSimulationThree(Request $request, AssessmentProgramSimulation $programSimulation): RedirectResponse
-    {
-        [$participation, $programSimulation] = $this->resolveAssignment($request, $programSimulation);
-        abort_unless($this->isAvailable($programSimulation), 403, 'Simulasi belum tersedia atau sudah ditutup.');
-
-        $validated = $request->validate([
-            'simulation_package' => ['required', 'string', 'in:ci_3,in_tray_3'],
-            'confirmation' => ['accepted'],
-        ], [
-            'simulation_package.required' => 'Pilih Critical Incident 3 atau In-Tray 3 terlebih dahulu.',
-            'simulation_package.in' => 'Pilihan Simulasi 3 tidak valid.',
-            'confirmation.accepted' => 'Anda harus menyetujui bahwa pilihan tidak dapat diubah setelah dikonfirmasi.',
-        ]);
-
-        $selectedSimulation = DB::transaction(function () use ($request, $participation, $programSimulation, $validated) {
-            $lockedParticipant = AssessmentParticipant::query()->lockForUpdate()->findOrFail($participation->id);
-            abort_unless($lockedParticipant->assessment_category === AssessmentParticipant::MADYA_CATEGORY, 403, 'Pemilihan jalur hanya tersedia untuk peserta Spesialis Madya.');
-            abort_if($lockedParticipant->simulation_three_choice, 409, 'Pilihan Simulasi 3 sudah dikunci dan tidak dapat diubah.');
-            abort_if($lockedParticipant->sessions()->whereHas('programSimulation.scenario.type', fn ($query) => $query->where('delivery_mode', 'case_response'))->exists(), 409, 'Pilihan tidak dapat dilakukan karena sesi Simulasi 3 sudah tercatat.');
-
-            $selected = AssessmentProgramSimulation::query()
-                ->where('assessment_program_id', $programSimulation->assessment_program_id)
-                ->whereHas('scenario', fn ($query) => $query->where('simulation_package', $validated['simulation_package']))
-                ->with('scenario.type')
-                ->firstOrFail();
-
-            $lockedParticipant->update([
-                'simulation_three_choice' => $validated['simulation_package'],
-                'simulation_three_chosen_at' => now(),
-            ]);
-            AuditLogger::record($request, 'participant.simulation_three_choice.confirmed', $lockedParticipant, [
-                'program_id' => $programSimulation->assessment_program_id,
-                'simulation_package' => $validated['simulation_package'],
-            ]);
-
-            return $selected;
-        });
-
-        return to_route('peserta-assessment.simulations.show', $selectedSimulation)
-            ->with('success', 'Pilihan Simulasi 3 berhasil dikonfirmasi dan telah dikunci. Timer belum berjalan sampai Anda menekan Mulai Simulasi.');
-    }
-
     public function start(Request $request, AssessmentProgramSimulation $programSimulation): RedirectResponse
     {
         [$participation, $programSimulation] = $this->resolveAssignment($request, $programSimulation);
         if ($programSimulation->scenario->type->delivery_mode === 'case_response') {
-            abort_if($participation->requiresSimulationThreeChoice(), 422, 'Pilih jalur Simulasi 3 terlebih dahulu.');
+            abort_if($participation->requiresSimulationThreeChoice(), 422, 'Paket Simulasi 3 belum ditetapkan oleh asesor.');
             abort_unless($programSimulation->scenario->simulation_package === $participation->simulationThreePackageKey(), 404);
         }
         abort_unless($this->isAvailable($programSimulation), 403, 'Simulasi belum tersedia atau sudah ditutup.');
@@ -261,10 +218,14 @@ class AssessmentSimulationController extends Controller
         abort_unless(in_array($programSimulation->scenario->type->delivery_mode, ['multi_page_response', 'case_response'], true) && $page >= 1 && $page <= $pages->count(), 404);
 
         $material = $pages->values()->get($page - 1);
-        $validated = $request->validate(['response' => [$material->is_required ? 'required' : 'nullable', 'string', 'max:50000']]);
+        $validated = $request->validate(['response' => [$material->is_required ? 'required' : 'nullable', 'string', 'max:100000']]);
+        $sanitizedResponse = RichTextSanitizer::sanitize($validated['response'] ?? '');
+        if ($material->is_required && blank(trim(html_entity_decode(strip_tags($sanitizedResponse))))) {
+            return back()->withInput()->withErrors(['response' => 'Jawaban wajib diisi sebelum disimpan.']);
+        }
         $submission = $session->submissions()->firstOrNew(['revision' => 1]);
         $responses = json_decode($submission->response_text ?? '{}', true) ?: [];
-        $responses[$page] = $validated['response'] ?? '';
+        $responses[$page] = $sanitizedResponse;
         $submission->response_text = json_encode($responses, JSON_UNESCAPED_UNICODE);
         $submission->save();
 
@@ -320,8 +281,15 @@ class AssessmentSimulationController extends Controller
 
         return Storage::disk('local')->response(
             $material->attachment_path,
-            $material->attachment_name ?: 'materi.pdf',
-            ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']
+            'materi-assessment.pdf',
+            [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="materi-assessment.pdf"',
+                'Cache-Control' => 'private, no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma' => 'no-cache',
+                'Expires' => '0',
+                'X-Content-Type-Options' => 'nosniff',
+            ]
         );
     }
 

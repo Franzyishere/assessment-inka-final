@@ -3,6 +3,7 @@
 use App\Models\AssessmentParticipant;
 use App\Models\AssessmentProgram;
 use App\Models\AssessmentProgramSimulation;
+use App\Models\AssessorAssignment;
 use App\Models\SimulationMaterialPage;
 use App\Models\SimulationScenario;
 use App\Models\SimulationSession;
@@ -42,7 +43,10 @@ test('lgd reviews submitted problem analysis with timer and participant submissi
         ->assertSee('Sisa waktu')
         ->assertSee('Simpan & Kumpulkan', false);
     $this->actingAs($participantUser)->get(route('peserta-assessment.simulations.material.pdf', [$problemSimulation, $material]))
-        ->assertOk()->assertHeader('content-type', 'application/pdf');
+        ->assertOk()
+        ->assertHeader('content-type', 'application/pdf')
+        ->assertHeader('content-disposition', 'inline; filename="materi-assessment.pdf"')
+        ->assertHeader('cache-control', 'max-age=0, must-revalidate, no-cache, no-store, private');
 });
 
 test('simulation three shows only the pdf package matching participant category', function () {
@@ -68,8 +72,9 @@ test('simulation three shows only the pdf package matching participant category'
     expect(SimulationSession::count())->toBe(1);
 });
 
-test('madya participant chooses one simulation three package and the choice is permanently locked', function () {
+test('assessor chooses madya simulation three package and it locks after participant starts', function () {
     $admin = User::where('role', User::ROLE_ADMIN)->firstOrFail();
+    $assessor = User::where('role', User::ROLE_ASESOR)->firstOrFail();
     $participantUser = User::where('role', User::ROLE_PESERTA_ASSESSMENT)->firstOrFail();
     $program = AssessmentProgram::create(['code' => 'REV-MADYA', 'name' => 'Pilihan Madya', 'status' => 'active', 'created_by' => $admin->id]);
     $catalog = SimulationCatalog::ensure($admin->id);
@@ -78,23 +83,24 @@ test('madya participant chooses one simulation three package and the choice is p
     $ci3 = AssessmentProgramSimulation::create(['assessment_program_id' => $program->id, 'simulation_scenario_id' => $ci3Scenario->id, 'status' => 'scheduled']);
     $inTray3 = AssessmentProgramSimulation::create(['assessment_program_id' => $program->id, 'simulation_scenario_id' => $inTray3Scenario->id, 'status' => 'scheduled']);
     $participant = AssessmentParticipant::create(['assessment_program_id' => $program->id, 'user_id' => $participantUser->id, 'assessment_category' => AssessmentParticipant::MADYA_CATEGORY, 'status' => 'assigned']);
+    AssessorAssignment::create(['assessment_program_simulation_id' => $ci3->id, 'assessor_id' => $assessor->id, 'assigned_by' => $admin->id, 'assigned_at' => now()]);
 
     $this->actingAs($participantUser)->post(route('peserta-assessment.simulations.start', $ci3))
         ->assertStatus(422);
     expect(SimulationSession::count())->toBe(0);
 
-    $this->actingAs($participantUser)->post(route('peserta-assessment.simulations.choose-simulation-three', $ci3), [
+    $this->actingAs($assessor)->put(route('asesor.participants.simulation-three-choice.update', $participant), [
         'simulation_package' => 'in_tray_3',
-        'confirmation' => '1',
-    ])->assertRedirect(route('peserta-assessment.simulations.show', $inTray3));
+    ])->assertRedirect();
 
     expect($participant->fresh()->simulation_three_choice)->toBe('in_tray_3')
         ->and($participant->fresh()->simulation_three_chosen_at)->not->toBeNull()
         ->and(SimulationSession::count())->toBe(0);
 
-    $this->actingAs($participantUser)->post(route('peserta-assessment.simulations.choose-simulation-three', $inTray3), [
+    $this->actingAs($participantUser)->post(route('peserta-assessment.simulations.start', $inTray3));
+
+    $this->actingAs($assessor)->put(route('asesor.participants.simulation-three-choice.update', $participant), [
         'simulation_package' => 'ci_3',
-        'confirmation' => '1',
     ])->assertStatus(409);
     $this->actingAs($participantUser)->get(route('peserta-assessment.simulations.show', $ci3))->assertNotFound();
 });

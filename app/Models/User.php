@@ -6,6 +6,7 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -22,6 +23,10 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'employee_number',
+        'hris_employee_id',
+        'identity_source',
+        'hris_synced_at',
         'role',
         'password',
     ];
@@ -93,6 +98,16 @@ class User extends Authenticatable
         return $this->hasMany(SimulationReview::class, 'assessor_id');
     }
 
+    public function recruitmentParticipant(): HasOne
+    {
+        return $this->hasOne(RecruitmentParticipant::class);
+    }
+
+    public function createdRecruitmentBatches(): HasMany
+    {
+        return $this->hasMany(RecruitmentBatch::class, 'created_by');
+    }
+
     /**
      * The attributes that should be hidden for serialization.
      *
@@ -112,6 +127,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'hris_synced_at' => 'datetime',
             'password' => 'hashed',
         ];
     }

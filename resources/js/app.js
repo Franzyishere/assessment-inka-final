@@ -19,6 +19,9 @@ Alpine.start();
 
 // Initialize components on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
+    if (document.querySelector('[data-rich-text-editor]')) {
+        import('./components/rich-text-editor').then(module => module.initializeRichTextEditors());
+    }
     // Map imports
     if (document.querySelector('#mapOne')) {
         import('./components/map').then(module => module.initMap());
