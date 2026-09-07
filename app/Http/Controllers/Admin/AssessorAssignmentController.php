@@ -28,6 +28,9 @@ class AssessorAssignmentController extends Controller
         if ($request->filled('program')) {
             $query->whereKey($request->integer('program'));
         }
+        if ($request->filled('search')) {
+            $query->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower(trim((string) $request->query('search'))).'%']);
+        }
 
         return view('pages.admin.assessor-assignments.index', [
             'title' => 'Penugasan Asesor',

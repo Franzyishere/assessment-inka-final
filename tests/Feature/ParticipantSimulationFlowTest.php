@@ -116,6 +116,22 @@ test('single material uses one save and submit action then disappears from activ
         ->assertOk()->assertSee('Tidak ada simulasi aktif');
 });
 
+test('participant can save an intermediate material without a page reload', function () {
+    ['participant' => $participant, 'programSimulation' => $programSimulation] = assignedProblemAnalysis();
+    $this->actingAs($participant)->post(route('peserta-assessment.simulations.start', $programSimulation));
+
+    $this->actingAs($participant)->putJson(
+        route('peserta-assessment.simulations.material.save', [$programSimulation, 1]),
+        ['response' => '<p>Jawaban materi pertama</p>']
+    )->assertOk()->assertJson([
+        'message' => 'Jawaban tersimpan.',
+        'next_page' => 2,
+    ]);
+
+    expect(SimulationSession::firstOrFail()->submissions()->firstOrFail()->response_text)
+        ->toContain('Jawaban materi pertama');
+});
+
 test('participant simulation list hides programs and simulations after their execution time ends', function () {
     ['participant' => $participant, 'programSimulation' => $programSimulation] = assignedProblemAnalysis();
     $programSimulation->program()->update(['ends_at' => now()->subMinute()]);

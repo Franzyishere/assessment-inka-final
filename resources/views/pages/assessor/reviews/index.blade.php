@@ -3,38 +3,39 @@
 @section('content')
 <x-common.page-breadcrumb pageTitle="Penilaian & Rekomendasi" />
 
-
-@php
-    $finalCount = $sessions->getCollection()->filter(fn ($session) => $session->reviews->first()?->status === 'submitted')->count();
-    $pendingCount = $sessions->count() - $finalCount;
-@endphp
-
-<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-    <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs"><p class="text-sm text-gray-500">Perlu ditinjau</p><p class="mt-2 text-3xl font-semibold text-warning-600">{{ $pendingCount }}</p></div>
-    <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs"><p class="text-sm text-gray-500">Penilaian final</p><p class="mt-2 text-3xl font-semibold text-success-600">{{ $finalCount }}</p></div>
-</div>
-
 <section class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-theme-xs">
-    <header class="border-b border-gray-200 px-5 py-5"><h2 class="font-semibold text-gray-900">Submission Peserta</h2><p class="mt-1 text-sm text-gray-500">Berikan penilaian dan rekomendasi pada simulasi yang telah dikumpulkan.</p></header>
-    <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50"><tr>@foreach(['Peserta', 'Program & Simulasi', 'Dikumpulkan', 'Status Penilaian', 'Aksi'] as $heading)<th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">{{ $heading }}</th>@endforeach</tr></thead>
-        <tbody class="divide-y divide-gray-100">
-            @forelse($sessions as $session)
-                @php
-                    $review = $session->reviews->first();
-                @endphp
-                <tr class="transition hover:bg-gray-50/80">
-                    <td class="px-5 py-4"><div class="text-sm font-medium text-gray-900">{{ $session->participant->user->name }}</div><div class="text-xs text-gray-500">{{ $session->participant->user->email }}</div></td>
-                    <td class="px-5 py-4"><div class="text-sm font-medium text-gray-700">{{ $session->programSimulation->scenario->type->name }}</div><div class="mt-0.5 text-xs text-gray-500">{{ $session->programSimulation->program->name }}</div></td>
-                    <td class="whitespace-nowrap px-5 py-4 text-sm text-gray-500">{{ $session->submitted_at?->format('d M Y, H:i') ?? '-' }}</td>
-                    <td class="px-5 py-4"><span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $review?->status === 'submitted' ? 'bg-success-50 text-success-700' : ($review ? 'bg-warning-50 text-warning-700' : 'bg-error-50 text-error-700') }}">{{ $review?->status === 'submitted' ? 'Final' : ($review ? 'Draft' : 'Belum Dinilai') }}</span></td>
-                    <td class="px-5 py-4"><a href="{{ route('asesor.reviews.edit', $session) }}" class="{{ $review?->status === 'submitted' ? 'crud-btn-secondary' : 'crud-btn-primary' }}">{{ $review?->status === 'submitted' ? 'Lihat Hasil' : 'Beri Penilaian' }}</a></td>
-                </tr>
-            @empty
-                <tr><td colspan="5" class="px-5 py-16 text-center"><h3 class="font-medium text-gray-800">Belum ada submission</h3><p class="mt-1 text-sm text-gray-500">Submission peserta yang siap dinilai akan muncul di sini.</p></td></tr>
-            @endforelse
-        </tbody>
-    </table></div>
-    @if($sessions->hasPages())<div class="border-t border-gray-200 px-5 py-4">{{ $sessions->links() }}</div>@endif
+    <header class="flex flex-col gap-4 border-b border-gray-200 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <div><h2 class="font-semibold text-gray-900">Program Assessment</h2><p class="mt-1 text-sm text-gray-500">Pilih program untuk melihat peserta dan simulasi yang perlu dinilai.</p></div>
+        <x-common.search-form :action="route('asesor.reviews.index')" placeholder="Cari program..." />
+    </header>
+
+    <div class="grid grid-cols-1 gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
+        @forelse($programs as $program)
+            @php
+                $sessions = $program->simulations->pluck('sessions')->flatten();
+                $participantCount = $sessions->pluck('assessment_participant_id')->unique()->count();
+                $finalCount = $sessions->filter(fn ($session) => $session->reviews->first()?->status === 'submitted')->count();
+                $pendingCount = $sessions->count() - $finalCount;
+            @endphp
+            <article class="flex min-h-64 flex-col rounded-2xl border border-gray-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-theme-md">
+                <div class="flex items-start justify-between gap-3">
+                    <span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5.5 3.5h9a1.5 1.5 0 0 1 1.5 1.5v11.5H4V5a1.5 1.5 0 0 1 1.5-1.5ZM7 7h6m-6 3h6m-6 3h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+                    <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $pendingCount > 0 ? 'bg-warning-50 text-warning-700' : 'bg-success-50 text-success-700' }}">{{ $pendingCount > 0 ? $pendingCount.' perlu dinilai' : 'Penilaian selesai' }}</span>
+                </div>
+                <h3 class="mt-5 text-lg font-semibold text-gray-900">{{ $program->name }}</h3>
+                <p class="mt-1 text-sm text-gray-500">{{ $program->starts_at?->format('d M Y') ?? 'Jadwal belum ditentukan' }}</p>
+                <div class="mt-5 grid grid-cols-3 divide-x divide-gray-200 rounded-xl bg-gray-50 py-3 text-center">
+                    <div><p class="text-lg font-semibold text-gray-800">{{ $participantCount }}</p><p class="text-[11px] text-gray-500">Peserta</p></div>
+                    <div><p class="text-lg font-semibold text-warning-600">{{ $pendingCount }}</p><p class="text-[11px] text-gray-500">Ditinjau</p></div>
+                    <div><p class="text-lg font-semibold text-success-600">{{ $finalCount }}</p><p class="text-[11px] text-gray-500">Final</p></div>
+                </div>
+                <a href="{{ route('asesor.reviews.program', $program) }}" class="crud-btn-primary mt-auto w-full">Lihat Peserta</a>
+            </article>
+        @empty
+            <div class="col-span-full py-14 text-center"><h3 class="font-medium text-gray-800">Belum ada program penilaian</h3><p class="mt-1 text-sm text-gray-500">Program yang ditugaskan kepada Anda akan muncul di sini.</p></div>
+        @endforelse
+    </div>
+
+    @if($programs->hasPages())<div class="border-t border-gray-200 px-5 py-4">{{ $programs->links() }}</div>@endif
 </section>
 @endsection

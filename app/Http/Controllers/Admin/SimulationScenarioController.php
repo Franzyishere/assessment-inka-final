@@ -23,11 +23,21 @@ class SimulationScenarioController extends Controller
     {
         $scenarios = SimulationCatalog::ensure($request->user()->id);
         $scenarios->each->load('materialPages');
+        $simulationTypes = SimulationType::query()->where('is_active', true)->orderBy('sequence')->get();
+
+        if ($request->filled('search')) {
+            $search = mb_strtolower(trim((string) $request->query('search')));
+            $matchingTypeIds = $simulationTypes->filter(fn ($type) => str_contains(mb_strtolower($type->name.' '.$type->description), $search))->pluck('id');
+            $scenarios = $scenarios->filter(fn ($scenario) => $matchingTypeIds->contains($scenario->simulation_type_id)
+                || str_contains(mb_strtolower($scenario->simulationThreePackageLabel() ?? ''), $search)
+                || str_contains(mb_strtolower($scenario->title ?? ''), $search))->values();
+            $simulationTypes = $simulationTypes->whereIn('id', $scenarios->pluck('simulation_type_id')->unique())->values();
+        }
 
         return view('pages.admin.simulations.index', [
             'title' => 'Bank Simulasi',
             'simulationGroups' => $scenarios->groupBy('simulation_type_id'),
-            'simulationTypes' => SimulationType::query()->where('is_active', true)->orderBy('sequence')->get(),
+            'simulationTypes' => $simulationTypes,
             'assessmentCategories' => AssessmentParticipant::CATEGORIES,
         ]);
     }

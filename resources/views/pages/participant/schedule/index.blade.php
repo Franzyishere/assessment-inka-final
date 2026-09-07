@@ -3,6 +3,8 @@
 @section('content')
 <x-common.page-breadcrumb pageTitle="Jadwal Assessment" />
 
+<div class="mb-5 rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs"><x-common.search-form :action="route('peserta-assessment.schedule.index')" placeholder="Cari program atau simulasi..." /></div>
+
 @php
     $allSimulations = $participations->pluck('program.simulations')->flatten();
     $upcomingCount = $allSimulations->filter(fn ($simulation) => $simulation->opens_at?->isFuture())->count();

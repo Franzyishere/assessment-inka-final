@@ -24,6 +24,13 @@ class AssessmentResultController extends Controller
             ->orderByDesc('id')
             ->get();
 
+        if ($request->filled('search')) {
+            $search = mb_strtolower(trim((string) $request->query('search')));
+            $participations = $participations->filter(fn ($participation) => str_contains(mb_strtolower($participation->program->name), $search)
+                || $participation->sessions->contains(fn ($session) => str_contains(mb_strtolower($session->programSimulation->scenario->type->name), $search)
+                    || str_contains(mb_strtolower($session->programSimulation->scenario->simulationThreePackageLabel() ?? ''), $search)))->values();
+        }
+
         return view('pages.participant.results.index', [
             'title' => 'Hasil & Rekomendasi',
             'participations' => $participations,

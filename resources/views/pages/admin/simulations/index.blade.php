@@ -8,6 +8,8 @@
     Kelola materi dan durasi untuk setiap rangkaian simulasi assessment.
 </div>
 
+<div class="mb-5 rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs"><x-common.search-form :action="route('admin.simulations.index')" placeholder="Cari simulasi atau paket materi..." /></div>
+
 <div class="space-y-4">
     @foreach($simulationTypes as $type)
         @php($items = $simulationGroups->get($type->id, collect()))
@@ -38,5 +40,6 @@
             @endif
         </section>
     @endforeach
+    @if($simulationTypes->isEmpty())<div class="rounded-2xl border border-dashed border-gray-300 bg-white px-5 py-14 text-center text-sm text-gray-500">Simulasi tidak ditemukan.</div>@endif
 </div>
 @endsection

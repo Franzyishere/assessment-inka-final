@@ -12,6 +12,7 @@
             </div>
             <a href="{{ route('admin.assessment-programs.create') }}" class="crud-btn-primary">Buat Program</a>
         </div>
+        <div class="border-b border-gray-200 bg-gray-50/60 px-5 py-3"><x-common.search-form :action="route('admin.assessment-programs.index')" placeholder="Cari nama program..." /></div>
 
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
@@ -36,7 +37,7 @@
                             <td class="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">{{ $program->simulations_count }}</td>
                             <td class="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">{{ $program->participants_count }}</td>
                             <td class="px-5 py-4"><span class="rounded-full px-2.5 py-1 text-xs font-medium {{ $statusClass }}">{{ ucfirst($program->status) }}</span></td>
-                            <td class="px-5 py-4"><div class="crud-actions"><a href="{{ route('admin.assessment-programs.setup.edit', $program) }}" class="crud-btn-soft-brand">Atur</a><a href="{{ route('admin.assessment-programs.edit', $program) }}" class="crud-btn-soft-neutral">Edit</a><button type="button" @click="deleting = { name: @js($program->name), action: @js(route('admin.assessment-programs.destroy', $program)) }" class="crud-btn-soft-danger">Hapus</button></div></td>
+                            <td class="px-5 py-4"><div class="crud-actions"><a href="{{ route('admin.assessment-programs.setup.edit', $program) }}" class="crud-btn-soft-brand">Atur</a><a href="{{ route('admin.assessment-programs.edit', $program) }}" class="crud-btn-soft-neutral">Edit</a><button type="button" @click="deleting = { name: @js($program->name), action: @js(route('admin.assessment-programs.destroy', $program)) }" class="crud-btn-soft-danger crud-btn-icon" title="Hapus program" aria-label="Hapus program {{ $program->name }}"><svg class="size-4" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3.75 5.5h12.5M8 3.25h4M5.75 5.5l.6 10a1.5 1.5 0 0 0 1.5 1.4h4.3a1.5 1.5 0 0 0 1.5-1.4l.6-10M8.25 8.5v5.25m3.5-5.25v5.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></td>
                         </tr>
                     @empty
                         <tr><td colspan="6" class="px-5 py-12 text-center text-sm text-gray-500">Belum ada program assessment.</td></tr>

@@ -15,6 +15,15 @@ class AuditLogController extends Controller
         if ($request->filled('action')) {
             $query->where('action', $request->string('action')->toString());
         }
+        if ($request->filled('search')) {
+            $search = '%'.mb_strtolower(trim((string) $request->query('search'))).'%';
+            $query->where(fn ($nested) => $nested
+                ->whereRaw('LOWER(action) LIKE ?', [$search])
+                ->orWhereRaw('LOWER(subject_type) LIKE ?', [$search])
+                ->orWhereHas('user', fn ($userQuery) => $userQuery
+                    ->whereRaw('LOWER(name) LIKE ?', [$search])
+                    ->orWhereRaw('LOWER(email) LIKE ?', [$search])));
+        }
 
         return view('pages.super-admin.audit-logs.index', [
             'title' => 'Audit Log',

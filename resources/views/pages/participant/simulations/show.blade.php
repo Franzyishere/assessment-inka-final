@@ -11,6 +11,15 @@
         <div class="rounded-xl bg-gray-50 p-4 dark:bg-white/5"><span class="text-xs text-gray-500">Dibuka</span><p class="mt-1 text-sm font-medium text-gray-800 dark:text-white/90">{{ $programSimulation->opens_at?->format('d M Y H:i') ?? 'Langsung' }}</p></div>
         <div class="rounded-xl bg-gray-50 p-4 dark:bg-white/5"><span class="text-xs text-gray-500">Status</span><p class="mt-1 font-medium text-gray-800 dark:text-white/90">{{ str_replace('_', ' ', $session?->status ?? 'Belum dimulai') }}</p></div>
     </div>
+    <div class="mt-6 flex items-start gap-4 rounded-xl border border-error-200 bg-error-50 p-4 shadow-theme-xs dark:border-error-500/30 dark:bg-error-500/10" role="alert">
+        <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-error-100 text-error-600 dark:bg-error-500/20 dark:text-error-400">
+            <svg class="size-5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 8v5m0 3h.01M10.3 3.8 2.5 17.3A2 2 0 0 0 4.2 20h15.6a2 2 0 0 0 1.7-2.7L13.7 3.8a2 2 0 0 0-3.4 0Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <div>
+            <h2 class="text-sm font-semibold text-error-800 dark:text-error-300">Aktivitas pengerjaan dipantau sistem</h2>
+            <p class="mt-1 text-sm leading-6 text-error-700 dark:text-error-400">Selama simulasi berlangsung, perpindahan tab atau keluar dari mode fullscreen akan terdeteksi dan tercatat sebagai aktivitas pengerjaan.</p>
+        </div>
+    </div>
     <div class="mt-6 rounded-xl border border-warning-200 bg-warning-50 p-4 dark:border-warning-500/30 dark:bg-warning-500/10">
         <h2 class="text-sm font-semibold text-warning-800 dark:text-warning-400">Sebelum memulai assessment</h2>
         <ul class="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-warning-700 dark:text-warning-400"><li>Pastikan koneksi internet stabil dan perangkat memiliki daya yang cukup.</li><li>Siapkan waktu sesuai durasi karena timer berjalan setelah tombol mulai ditekan.</li><li>Mode fullscreen wajib digunakan selama pengerjaan.</li><li>Jawaban yang sudah dikumpulkan tidak dapat diubah kembali.</li></ul>

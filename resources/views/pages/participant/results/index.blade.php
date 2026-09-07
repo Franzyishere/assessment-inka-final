@@ -3,6 +3,8 @@
 @section('content')
 <x-common.page-breadcrumb pageTitle="Hasil & Rekomendasi" />
 
+<div class="mb-5 rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs"><x-common.search-form :action="route('peserta-assessment.results.index')" placeholder="Cari program atau hasil simulasi..." /></div>
+
 <div class="mb-5 flex items-start gap-3 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-700"><span class="flex size-5 shrink-0 items-center justify-center rounded-full bg-brand-500 text-xs font-semibold text-white">i</span><p>Hasil hanya ditampilkan setelah asesor memfinalisasi penilaian. Penilaian berstatus draft tidak dipublikasikan.</p></div>
 
 <div class="space-y-6">

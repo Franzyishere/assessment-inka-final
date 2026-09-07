@@ -11,6 +11,7 @@ use App\Models\SimulationSessionEvent;
 use App\Models\SimulationSubmission;
 use App\Models\SimulationType;
 use App\Support\RichTextSanitizer;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -42,7 +43,9 @@ class AssessmentSimulationController extends Controller
                         return $participation->sessions->firstWhere('assessment_program_simulation_id', $simulation->id)?->status !== 'submitted';
                     }
 
-                    if ($participation->sessions->firstWhere('assessment_program_simulation_id', $simulation->id)?->status === 'submitted') return false;
+                    if ($participation->sessions->firstWhere('assessment_program_simulation_id', $simulation->id)?->status === 'submitted') {
+                        return false;
+                    }
 
                     if ($participation->requiresSimulationThreeChoice()) {
                         return $simulation->scenario->simulation_package === 'ci_3';
@@ -52,6 +55,18 @@ class AssessmentSimulationController extends Controller
                 })
                 ->values());
         });
+
+        $search = mb_strtolower(trim((string) $request->query('search')));
+        if ($search) {
+            $participations = $participations->map(function ($participation) use ($search) {
+                if (! str_contains(mb_strtolower($participation->program->name), $search)) {
+                    $participation->program->setRelation('simulations', $participation->program->simulations->filter(fn ($simulation) => str_contains(mb_strtolower($simulation->scenario->type->name), $search)
+                        || str_contains(mb_strtolower($simulation->scenario->simulationThreePackageLabel() ?? ''), $search))->values());
+                }
+
+                return $participation;
+            })->filter(fn ($participation) => str_contains(mb_strtolower($participation->program->name), $search) || $participation->program->simulations->isNotEmpty())->values();
+        }
 
         return view('pages.participant.simulations.index', [
             'title' => 'Simulasi Saya',
@@ -203,6 +218,8 @@ class AssessmentSimulationController extends Controller
             'title' => $programSimulation->scenario->type->name,
             'programSimulation' => $programSimulation,
             'session' => $session,
+            'materials' => $pages->values(),
+            'responses' => $responses,
             'material' => $pages->values()->get($page - 1),
             'pageNumber' => $page,
             'pageCount' => $pages->count(),
@@ -210,7 +227,7 @@ class AssessmentSimulationController extends Controller
         ]);
     }
 
-    public function saveMaterial(Request $request, AssessmentProgramSimulation $programSimulation, int $page): RedirectResponse
+    public function saveMaterial(Request $request, AssessmentProgramSimulation $programSimulation, int $page): RedirectResponse|JsonResponse
     {
         [$participation, $programSimulation] = $this->resolveAssignment($request, $programSimulation);
         $session = $this->activeSession($programSimulation, $participation);
@@ -230,7 +247,23 @@ class AssessmentSimulationController extends Controller
         $submission->save();
 
         if ($request->boolean('submit_after_save')) {
-            abort_unless($pages->count() === 1 && $page === 1, 422, 'Aksi simpan dan kumpulkan hanya tersedia untuk simulasi dengan satu materi.');
+            abort_unless($page === $pages->count(), 422, 'Aksi simpan dan kumpulkan hanya tersedia pada materi terakhir.');
+
+            $missingPage = $pages->values()->first(
+                fn ($pageMaterial, $index) => $pageMaterial->is_required
+                    && blank(trim(html_entity_decode(strip_tags($responses[$index + 1] ?? ''))))
+            );
+
+            if ($missingPage) {
+                $missingPageNumber = $pages->values()->search(
+                    fn ($pageMaterial) => $pageMaterial->is($missingPage)
+                ) + 1;
+
+                return redirect()
+                    ->route('peserta-assessment.simulations.material', [$programSimulation, $missingPageNumber])
+                    ->withErrors(['response' => 'Materi wajib ini harus dijawab sebelum simulasi dikumpulkan.']);
+            }
+
             $session->update(['status' => 'submitted', 'submitted_at' => now()]);
             $submission->update(['submitted_at' => now()]);
 
@@ -239,6 +272,14 @@ class AssessmentSimulationController extends Controller
         }
 
         $nextPage = min($page + 1, $pages->count());
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Jawaban tersimpan.',
+                'next_page' => $nextPage,
+                'next_url' => route('peserta-assessment.simulations.material', [$programSimulation, $nextPage]),
+            ]);
+        }
 
         return redirect()->route('peserta-assessment.simulations.material', [$programSimulation, $nextPage])->with('success', 'Jawaban tersimpan.');
     }

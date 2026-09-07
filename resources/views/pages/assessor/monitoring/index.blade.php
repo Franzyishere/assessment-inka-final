@@ -3,6 +3,8 @@
 @section('content')
 <x-common.page-breadcrumb pageTitle="Monitoring Simulasi" />
 
+<div class="mb-5 rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs"><x-common.search-form :action="route('asesor.monitoring.index')" placeholder="Cari program atau simulasi..." /></div>
+
 <div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
     @forelse($simulations as $simulation)
         <article class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-theme-xs">

@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Assessor;
 
 use App\Http\Controllers\Controller;
+use App\Models\AssessmentProgram;
 use App\Models\AssessmentProgramSimulation;
 use App\Models\AssessorAssignment;
 use App\Models\SimulationMaterialPage;
-use App\Models\SimulationSession;
 use App\Models\SimulationSubmission;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -16,7 +17,46 @@ class AssignedSimulationController extends Controller
 {
     public function index(Request $request): View
     {
-        $assignments = AssessorAssignment::query()
+        $programs = $this->activeAssignments($request)
+            ->groupBy(fn (AssessorAssignment $assignment) => $assignment->programSimulation->assessment_program_id)
+            ->map(function (Collection $assignments): array {
+                return [
+                    'program' => $assignments->first()->programSimulation->program,
+                    'assignments_count' => $assignments->count(),
+                    'submission_count' => $assignments->sum(fn (AssessorAssignment $assignment) => $assignment->programSimulation->sessions->where('status', 'submitted')->count()),
+                ];
+            })
+            ->sortByDesc(fn (array $item) => sprintf(
+                '%020d-%020d',
+                $item['program']->created_at?->timestamp ?? 0,
+                $item['program']->id
+            ))
+            ->when($request->filled('search'), fn (Collection $items) => $items->filter(fn (array $item) => str_contains(
+                mb_strtolower($item['program']->name),
+                mb_strtolower(trim((string) $request->query('search')))
+            )))
+            ->values();
+
+        return view('pages.assessor.simulations.index', ['title' => 'Simulasi Ditugaskan', 'programs' => $programs]);
+    }
+
+    public function program(Request $request, AssessmentProgram $program): View
+    {
+        abort_unless(AssessorAssignment::query()
+            ->where('assessor_id', $request->user()->id)
+            ->whereHas('programSimulation', fn ($query) => $query->where('assessment_program_id', $program->id))
+            ->exists(), 403);
+
+        $assignments = $this->activeAssignments($request)
+            ->filter(fn (AssessorAssignment $assignment) => $assignment->programSimulation->assessment_program_id === $program->id)
+            ->values();
+
+        return view('pages.assessor.simulations.program', compact('program', 'assignments') + ['title' => $program->name]);
+    }
+
+    private function activeAssignments(Request $request): Collection
+    {
+        return AssessorAssignment::query()
             ->where('assessor_id', $request->user()->id)
             ->with(['programSimulation.program.participants', 'programSimulation.scenario.type', 'programSimulation.sessions'])
             ->orderBy('assigned_at')->orderBy('id')->get()
@@ -26,14 +66,14 @@ class AssignedSimulationController extends Controller
                 if ($simulation->scenario->type->delivery_mode === 'case_response') {
                     $eligible = $eligible->filter(fn ($participant) => $participant->simulationThreePackageKey() === $simulation->scenario->simulation_package);
                 }
-                if ($eligible->isEmpty()) return false;
+                if ($eligible->isEmpty()) {
+                    return false;
+                }
 
                 $submittedParticipantIds = $simulation->sessions->where('status', 'submitted')->pluck('assessment_participant_id')->unique();
 
                 return $eligible->pluck('id')->diff($submittedParticipantIds)->isEmpty();
             })->values();
-
-        return view('pages.assessor.simulations.index', ['title' => 'Simulasi Ditugaskan', 'assignments' => $assignments]);
     }
 
     public function show(Request $request, AssessmentProgramSimulation $programSimulation): View

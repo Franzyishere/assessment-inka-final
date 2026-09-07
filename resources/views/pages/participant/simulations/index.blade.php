@@ -3,6 +3,7 @@
 @section('content')
 <x-common.page-breadcrumb pageTitle="Simulasi Saya" />
 
+<div class="mb-5 rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs"><x-common.search-form :action="route('peserta-assessment.simulations.index')" placeholder="Cari program atau simulasi..." /></div>
 
 <div class="space-y-6">
     @forelse ($participations as $participation)

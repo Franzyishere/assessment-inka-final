@@ -27,4 +27,20 @@
             </div>
         @endforeach
     </div>
+
+    @if (count($charts))
+        <div class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+            @foreach ($charts as $index => $chart)
+                <section class="min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+                    <div class="mb-5">
+                        <h2 class="text-base font-semibold text-gray-900 dark:text-white">{{ $chart['title'] }}</h2>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $chart['description'] }}</p>
+                    </div>
+                    <div data-dashboard-chart="dashboard-chart-{{ $index }}"
+                        class="min-h-72 w-full overflow-hidden {{ $chart['type'] === 'donut' ? 'dashboard-donut-chart' : 'dashboard-bar-chart' }}"></div>
+                    <script id="dashboard-chart-{{ $index }}" type="application/json">@json($chart)</script>
+                </section>
+            @endforeach
+        </div>
+    @endif
 @endsection

@@ -210,6 +210,10 @@
 }
 
 @layer components {
+  [data-page-content].is-live-search-loading {
+    @apply pointer-events-none opacity-60;
+  }
+
   .dashboard-hero {
     @apply relative isolate overflow-hidden rounded-3xl px-6 pb-24 pt-8 text-white shadow-theme-lg sm:px-8 sm:pt-10;
     background: linear-gradient(135deg, #9f101b 0%, #c91422 48%, #e21a29 100%);
@@ -251,7 +255,7 @@
   .crud-btn-soft-brand,
   .crud-btn-soft-neutral,
   .crud-btn-soft-danger {
-    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium shadow-theme-xs transition-colors focus-visible:outline-none focus-visible:ring-4 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold shadow-theme-xs transition-colors focus-visible:outline-none focus-visible:ring-4 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .crud-btn-primary {
@@ -270,11 +274,11 @@
   .crud-btn-soft-brand,
   .crud-btn-soft-neutral,
   .crud-btn-soft-danger {
-    @apply min-h-8 px-3 py-1.5 text-xs shadow-none;
+    @apply min-h-7 px-2.5 py-1 text-xs shadow-none;
   }
 
   .crud-btn-soft-brand {
-    @apply border border-gray-800 bg-gray-800 text-white hover:border-gray-700 hover:bg-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600;
+    @apply border border-warning-200 bg-warning-50 text-warning-700 hover:border-warning-300 hover:bg-warning-100 dark:border-warning-500/30 dark:bg-warning-500/10 dark:text-warning-400 dark:hover:bg-warning-500/20;
   }
 
   .crud-btn-soft-neutral {
@@ -286,7 +290,11 @@
   }
 
   .crud-actions {
-    @apply flex flex-wrap items-center gap-2;
+    @apply flex flex-wrap items-center gap-1.5;
+  }
+
+  .crud-btn-icon {
+    @apply size-7 min-h-7 px-0 py-0;
   }
 }
 
@@ -449,6 +457,21 @@
 }
 
 /* third-party libraries CSS */
+.dashboard-donut-chart .apexcharts-tooltip {
+  background: #111827 !important;
+  border: 1px solid #374151 !important;
+  border-radius: 8px;
+  color: #ffffff !important;
+}
+
+.dashboard-donut-chart .apexcharts-tooltip-title,
+.dashboard-donut-chart .apexcharts-tooltip-text,
+.dashboard-donut-chart .apexcharts-tooltip-text span {
+  color: #ffffff !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+
 .apexcharts-legend-text {
   @apply !text-gray-700 dark:!text-gray-400;
 }
@@ -485,6 +508,26 @@
 
 .apexcharts-gridline {
   @apply !stroke-gray-100 dark:!stroke-gray-800;
+}
+
+.dashboard-donut-chart .apexcharts-canvas,
+.dashboard-donut-chart .apexcharts-svg {
+  margin-inline: auto;
+}
+
+[data-dashboard-chart] .apexcharts-text,
+[data-dashboard-chart] .apexcharts-legend-text {
+  font-weight: 600 !important;
+}
+
+[data-dashboard-chart] .apexcharts-xaxis-label,
+[data-dashboard-chart] .apexcharts-yaxis-label {
+  fill: #334155 !important;
+}
+
+.dashboard-donut-chart .apexcharts-pie-label {
+  fill: #ffffff !important;
+  font-weight: 700 !important;
 }
 #chartTwo .apexcharts-datalabels-group {
   @apply !-translate-y-24;
@@ -983,7 +1026,7 @@ pre[class*='language-'] {
   }
 
   .tiptap-answer-surface {
-    @apply min-h-72 max-w-full overflow-x-auto break-words px-5 py-4 text-sm leading-7 text-gray-800 outline-none;
+    @apply min-h-72 max-w-full overflow-x-auto break-words px-5 py-4 text-sm leading-7 text-black outline-none;
   }
 
   .tiptap-answer-surface p { @apply my-2; }
@@ -991,6 +1034,7 @@ pre[class*='language-'] {
   .tiptap-answer-surface ol { @apply my-3 list-decimal pl-6; }
   .tiptap-answer-surface blockquote { @apply my-3 border-l-4 border-gray-300 pl-4 text-gray-600; }
   .tiptap-answer-surface table { @apply my-4 w-full max-w-full border-collapse; }
+  .tiptap-answer-surface .tableWrapper { @apply max-w-full overflow-x-auto; }
   .tiptap-answer-surface th { @apply border border-gray-300 bg-gray-100 px-3 py-2 text-left font-semibold; }
   .tiptap-answer-surface td { @apply min-w-20 border border-gray-300 px-3 py-2 align-top; }
   .tiptap-answer-surface .selectedCell { @apply bg-brand-50; }

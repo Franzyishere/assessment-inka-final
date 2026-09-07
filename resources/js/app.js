@@ -1,24 +1,22 @@
 import './bootstrap';
 import Alpine from 'alpinejs';
-import ApexCharts from 'apexcharts';
+import { initializeLiveSearch } from './components/live-search';
+import { initializeDashboardCharts } from './components/dashboard-charts';
 
 // flatpickr
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
-// FullCalendar
-import { Calendar } from '@fullcalendar/core';
 
 
 
 window.Alpine = Alpine;
-window.ApexCharts = ApexCharts;
 window.flatpickr = flatpickr;
-window.FullCalendar = Calendar;
 
 Alpine.start();
 
 // Initialize components on DOM ready
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    initializeLiveSearch();
     if (document.querySelector('[data-rich-text-editor]')) {
         import('./components/rich-text-editor').then(module => module.initializeRichTextEditors());
     }
@@ -28,6 +26,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Chart imports
+    if (document.querySelector('[data-dashboard-chart], #chartOne, #chartTwo, #chartThree, #chartSix, #chartEight, #chartThirteen')) {
+        const { default: ApexCharts } = await import('apexcharts');
+        window.ApexCharts = ApexCharts;
+        initializeDashboardCharts();
+    }
     if (document.querySelector('#chartOne')) {
         import('./components/chart/chart-1').then(module => module.initChartOne());
     }

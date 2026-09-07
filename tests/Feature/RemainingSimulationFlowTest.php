@@ -4,6 +4,7 @@ use App\Models\AssessmentParticipant;
 use App\Models\AssessmentProgram;
 use App\Models\AssessmentProgramSimulation;
 use App\Models\AssessorAssignment;
+use App\Models\SimulationMaterialPage;
 use App\Models\SimulationScenario;
 use App\Models\SimulationSession;
 use App\Models\SimulationType;
@@ -31,6 +32,10 @@ function simulationFlowSetup(string $typeCode, string $suffix): array
 
 test('participant completes critical incident case response', function () {
     ['participantUser' => $participant, 'programSimulation' => $simulation] = simulationFlowSetup(SimulationType::CRITICAL_INCIDENT, 'CASE');
+    $this->actingAs($participant)->get(route('peserta-assessment.simulations.show', $simulation))
+        ->assertOk()
+        ->assertSee('Aktivitas pengerjaan dipantau sistem')
+        ->assertSee('perpindahan tab atau keluar dari mode fullscreen');
     $this->actingAs($participant)->post(route('peserta-assessment.simulations.start', $simulation))
         ->assertRedirect(route('peserta-assessment.simulations.case-response', $simulation));
     $this->actingAs($participant)->get(route('peserta-assessment.simulations.case-response', $simulation))->assertOk()->assertSee('Materi kasus simulasi.');
@@ -38,6 +43,41 @@ test('participant completes critical incident case response', function () {
         ->assertRedirect(route('peserta-assessment.simulations.index'));
     expect(SimulationSession::firstOrFail()->status)->toBe('submitted')
         ->and(SimulationSession::firstOrFail()->submissions->first()->response_text)->toBe('Keputusan dan analisis peserta.');
+});
+
+test('participant final critical incident answer is saved when save and submit is clicked directly', function () {
+    ['participantUser' => $participant, 'programSimulation' => $simulation] = simulationFlowSetup(SimulationType::CRITICAL_INCIDENT, 'CASE-MULTI');
+
+    foreach (range(1, 3) as $page) {
+        SimulationMaterialPage::create([
+            'simulation_scenario_id' => $simulation->simulation_scenario_id,
+            'title' => "Materi {$page}",
+            'content' => "Kasus {$page}",
+            'page_order' => $page,
+            'is_required' => true,
+        ]);
+    }
+
+    $this->actingAs($participant)->post(route('peserta-assessment.simulations.start', $simulation))
+        ->assertRedirect(route('peserta-assessment.simulations.material', [$simulation, 1]));
+
+    foreach ([1 => 'Jawaban pertama', 2 => 'Jawaban kedua'] as $page => $answer) {
+        $this->actingAs($participant)->put(
+            route('peserta-assessment.simulations.material.save', [$simulation, $page]),
+            ['response' => $answer]
+        )->assertRedirect(route('peserta-assessment.simulations.material', [$simulation, $page + 1]));
+    }
+
+    $this->actingAs($participant)->put(
+        route('peserta-assessment.simulations.material.save', [$simulation, 3]),
+        ['response' => '<p>Jawaban terakhir langsung dikumpulkan</p>', 'submit_after_save' => '1']
+    )->assertRedirect(route('peserta-assessment.simulations.index'));
+
+    $session = SimulationSession::firstOrFail();
+    $responses = json_decode($session->submissions()->firstOrFail()->response_text, true);
+
+    expect($session->status)->toBe('submitted')
+        ->and($responses[3])->toBe('<p>Jawaban terakhir langsung dikumpulkan</p>');
 });
 
 test('participant completes timed lgd then assessor proceeds to review', function () {
@@ -55,7 +95,7 @@ test('participant completes timed lgd then assessor proceeds to review', functio
     $session = SimulationSession::where('assessment_program_simulation_id', $simulation->id)->firstOrFail();
     expect($session->status)->toBe('submitted');
     $this->actingAs($assessor)->get(route('asesor.simulations.show', $simulation))->assertOk()->assertSee('Beri penilaian');
-    $this->actingAs($assessor)->get(route('asesor.reviews.edit', $session))->assertOk()->assertSee('Observasi Asesor');
+    $this->actingAs($assessor)->get(route('asesor.reviews.edit', $session))->assertOk()->assertSee('Hasil Observasi LGD');
 });
 
 test('participant cannot start lgd before problem analysis is submitted', function () {

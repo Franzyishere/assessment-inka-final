@@ -14,7 +14,6 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Participant\AssessmentResultController;
 use App\Http\Controllers\Participant\AssessmentScheduleController;
 use App\Http\Controllers\Participant\AssessmentSimulationController;
-use App\Http\Controllers\PortalController;
 use App\Http\Controllers\SuperAdmin\AccessControlController;
 use App\Http\Controllers\SuperAdmin\AuditLogController;
 use App\Http\Controllers\SuperAdmin\UserManagementController;
@@ -26,8 +25,8 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::redirect('/', '/portal')->name('dashboard');
-    Route::get('/portal', [PortalController::class, 'index'])->name('portal.index');
+    Route::get('/header-notifications', \App\Http\Controllers\HeaderNotificationController::class)->middleware('throttle:60,1')->name('header.notifications');
+    Route::get('/', [DashboardController::class, 'redirect'])->name('dashboard');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
     Route::middleware('role:super_admin')->prefix('super-admin')->name('super-admin.')->group(function () {
@@ -57,6 +56,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:asesor')->prefix('asesor')->name('asesor.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'asesor'])->name('dashboard');
         Route::get('/simulations', [AssignedSimulationController::class, 'index'])->name('simulations.index');
+        Route::get('/simulations/programs/{program}', [AssignedSimulationController::class, 'program'])->name('simulations.program');
         Route::get('/simulations/{programSimulation}', [AssignedSimulationController::class, 'show'])->name('simulations.show');
         Route::get('/submissions/{submission}/download', [AssignedSimulationController::class, 'download'])->name('submissions.download');
         Route::get('/submissions/{submission}/preview', [AssignedSimulationController::class, 'preview'])->name('submissions.preview');
@@ -65,6 +65,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/participants/{participant}/simulation-three-choice', [AssessmentWorkspaceController::class, 'updateSimulationThreeChoice'])->middleware('throttle:20,1')->name('participants.simulation-three-choice.update');
         Route::get('/monitoring', [AssessmentWorkspaceController::class, 'monitoring'])->name('monitoring.index');
         Route::get('/reviews', [SimulationReviewController::class, 'index'])->name('reviews.index');
+        Route::get('/reviews/programs/{program}', [SimulationReviewController::class, 'program'])->name('reviews.program');
         Route::get('/reviews/{session}/edit', [SimulationReviewController::class, 'edit'])->name('reviews.edit');
         Route::put('/reviews/{session}', [SimulationReviewController::class, 'update'])->name('reviews.update');
     });

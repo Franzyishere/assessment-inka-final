@@ -47,7 +47,7 @@
         <div class="space-y-4">
             <template x-for="(page, index) in pages" :key="index">
                 <div class="rounded-xl border border-gray-200 p-4 dark:border-gray-800">
-                    <div class="mb-3 flex items-center justify-between gap-3"><h3 class="text-sm font-semibold text-gray-800 dark:text-white/90" x-text="`Materi ${index + 1}`"></h3><button x-show="isCriticalIncident" type="button" @click="removePage(index)" class="crud-btn-soft-danger">Hapus</button></div>
+                    <div class="mb-3 flex items-center justify-between gap-3"><h3 class="text-sm font-semibold text-gray-800 dark:text-white/90" x-text="`Materi ${index + 1}`"></h3><button x-show="isCriticalIncident" type="button" @click="removePage(index)" class="crud-btn-soft-danger crud-btn-icon" title="Hapus materi" :aria-label="`Hapus materi ${index + 1}`"><svg class="size-4" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3.75 5.5h12.5M8 3.25h4M5.75 5.5l.6 10a1.5 1.5 0 0 0 1.5 1.4h4.3a1.5 1.5 0 0 0 1.5-1.4l.6-10M8.25 8.5v5.25m3.5-5.25v5.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
                     <input type="hidden" :name="`material_pages[${index}][id]`" x-model="page.id" :disabled="!usesPdfMaterials">
                     <input type="hidden" :name="`material_pages[${index}][title]`" :value="`Materi ${index + 1}`" :disabled="!usesPdfMaterials">
                     <input type="hidden" :name="`material_pages[${index}][is_required]`" :value="page.is_required ? 1 : 0" :disabled="!usesPdfMaterials">

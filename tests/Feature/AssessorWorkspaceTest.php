@@ -53,3 +53,33 @@ test('assessor without assignments sees empty workspace', function () {
         ->assertOk()
         ->assertSee('Belum ada simulasi');
 });
+
+test('active assignments are grouped by assessment program', function () {
+    $admin = User::where('role', User::ROLE_ADMIN)->firstOrFail();
+    $assessor = User::where('role', User::ROLE_ASESOR)->firstOrFail();
+    $participantUser = User::where('role', User::ROLE_PESERTA_ASSESSMENT)->firstOrFail();
+    $type = SimulationType::where('code', SimulationType::PROBLEM_ANALYSIS)->firstOrFail();
+    $program = AssessmentProgram::create(['code' => 'GROUP-01', 'name' => 'Program Assessment September', 'status' => 'active', 'created_by' => $admin->id]);
+    $scenario = SimulationScenario::create(['simulation_type_id' => $type->id, 'code' => 'GROUP-SIM-01', 'title' => 'Materi Aktif', 'status' => 'active', 'created_by' => $admin->id]);
+    $simulation = AssessmentProgramSimulation::create(['assessment_program_id' => $program->id, 'simulation_scenario_id' => $scenario->id, 'status' => 'scheduled']);
+    AssessmentParticipant::create(['assessment_program_id' => $program->id, 'user_id' => $participantUser->id, 'status' => 'assigned']);
+    AssessorAssignment::create(['assessment_program_simulation_id' => $simulation->id, 'assessor_id' => $assessor->id, 'assigned_by' => $admin->id]);
+
+    $newProgram = AssessmentProgram::create(['code' => 'GROUP-02', 'name' => 'Program Assessment Terbaru', 'status' => 'active', 'created_by' => $admin->id]);
+    $newScenario = SimulationScenario::create(['simulation_type_id' => $type->id, 'code' => 'GROUP-SIM-02', 'title' => 'Materi Program Terbaru', 'status' => 'active', 'created_by' => $admin->id]);
+    $newSimulation = AssessmentProgramSimulation::create(['assessment_program_id' => $newProgram->id, 'simulation_scenario_id' => $newScenario->id, 'status' => 'scheduled']);
+    AssessmentParticipant::create(['assessment_program_id' => $newProgram->id, 'user_id' => $participantUser->id, 'status' => 'assigned']);
+    AssessorAssignment::create(['assessment_program_simulation_id' => $newSimulation->id, 'assessor_id' => $assessor->id, 'assigned_by' => $admin->id]);
+
+    $this->actingAs($assessor)->get(route('asesor.simulations.index'))
+        ->assertOk()
+        ->assertSee('Daftar Program Assessment')
+        ->assertSeeInOrder(['Program Assessment Terbaru', 'Program Assessment September'])
+        ->assertDontSee('Materi Aktif');
+
+    $this->actingAs($assessor)->get(route('asesor.simulations.program', $program))
+        ->assertOk()
+        ->assertSee('Program Assessment September')
+        ->assertSee('Simulasi 1')
+        ->assertSee('Problem Analysis');
+});

@@ -40,6 +40,13 @@ class AssessmentScheduleController extends Controller
                 ->values());
         });
 
+        if ($request->filled('search')) {
+            $search = mb_strtolower(trim((string) $request->query('search')));
+            $participations = $participations->filter(fn ($participation) => str_contains(mb_strtolower($participation->program->name), $search)
+                || $participation->program->simulations->contains(fn ($simulation) => str_contains(mb_strtolower($simulation->scenario->type->name), $search)
+                    || str_contains(mb_strtolower($simulation->scenario->simulationThreePackageLabel() ?? ''), $search)))->values();
+        }
+
         return view('pages.participant.schedule.index', [
             'title' => 'Jadwal Assessment',
             'participations' => $participations,

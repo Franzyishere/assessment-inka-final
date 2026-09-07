@@ -14,14 +14,15 @@ use Illuminate\View\View;
 
 class AssessmentProgramController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         return view('pages.admin.assessment-programs.index', [
             'title' => 'Program Assessment',
             'programs' => AssessmentProgram::query()
                 ->withCount(['participants', 'simulations'])
+                ->when($request->filled('search'), fn ($query) => $query->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower(trim((string) $request->query('search'))).'%']))
                 ->orderByDesc('starts_at')->orderBy('name')->orderBy('id')
-                ->paginate(10),
+                ->paginate(10)->withQueryString(),
         ]);
     }
 

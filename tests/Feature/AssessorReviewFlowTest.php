@@ -35,15 +35,19 @@ function submittedSessionForReview(): array
 test('assigned assessor saves draft and finalizes review', function () {
     ['assessor' => $assessor, 'session' => $session] = submittedSessionForReview();
 
-    $this->actingAs($assessor)->get(route('asesor.reviews.index'))->assertOk()->assertSee('Simulasi 1 - Problem Analysis');
+    $program = $session->programSimulation->program;
+    $this->actingAs($assessor)->get(route('asesor.reviews.index'))
+        ->assertOk()->assertSee('Review Test')->assertSee('Lihat Peserta');
+    $this->actingAs($assessor)->get(route('asesor.reviews.program', $program))
+        ->assertOk()->assertSee($session->participant->user->name)->assertSee('Simulasi 1 - Problem Analysis');
     $this->actingAs($assessor)->put(route('asesor.reviews.update', $session), [
         'status' => 'draft', 'assessment_notes' => 'Catatan sementara',
-    ])->assertRedirect(route('asesor.reviews.index'));
+    ])->assertRedirect(route('asesor.reviews.program', $program));
     expect($session->reviews()->firstOrFail()->status)->toBe('draft');
 
     $this->actingAs($assessor)->put(route('asesor.reviews.update', $session), [
         'status' => 'submitted', 'recommendation' => 'recommended_with_development', 'assessment_notes' => 'Perlu pengembangan komunikasi.',
-    ])->assertRedirect(route('asesor.reviews.index'));
+    ])->assertRedirect(route('asesor.reviews.program', $program));
     expect($session->reviews()->firstOrFail()->status)->toBe('submitted')
         ->and($session->reviews()->firstOrFail()->reviewed_at)->not->toBeNull();
 
@@ -57,5 +61,6 @@ test('unassigned assessor cannot view or review participant submission', functio
     $other = User::create(['name' => 'Asesor Tidak Ditugaskan', 'email' => 'unauthorized-assessor@example.test', 'role' => User::ROLE_ASESOR, 'password' => 'password']);
 
     $this->actingAs($other)->get(route('asesor.reviews.edit', $session))->assertForbidden();
+    $this->actingAs($other)->get(route('asesor.reviews.program', $session->programSimulation->program))->assertForbidden();
     $this->actingAs($other)->put(route('asesor.reviews.update', $session), ['status' => 'draft'])->assertForbidden();
 });

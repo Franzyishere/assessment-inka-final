@@ -154,7 +154,7 @@ test('program setup integrates selected simulation participant and assessor', fu
         'participant_ids' => [$participant->id],
         'participant_categories' => [$participant->id => 'grade_1_to_2'],
         'assessor_ids' => [$assessor->id],
-    ])->assertRedirect(route('admin.assessment-programs.setup.edit', $program));
+    ])->assertRedirect(route('admin.assessment-programs.index'));
 
     $programSimulation = AssessmentProgramSimulation::where('assessment_program_id', $program->id)->firstOrFail();
     expect($programSimulation->simulation_scenario_id)->toBe($scenario->id)
@@ -173,7 +173,7 @@ test('active simulation created from admin form is available in program setup', 
         ->assertOk()->assertSee($type->name)->assertDontSee('Belum ada simulasi berstatus aktif.');
     $this->actingAs($admin)->put(route('admin.assessment-programs.setup.update', $program), [
         'simulation_ids' => [$scenario->id], 'participant_ids' => [], 'assessor_ids' => [$assessor->id],
-    ])->assertRedirect(route('admin.assessment-programs.setup.edit', $program));
+    ])->assertRedirect(route('admin.assessment-programs.index'));
     expect($program->simulations()->where('simulation_scenario_id', $scenario->id)->exists())->toBeTrue();
 });
 

@@ -8,13 +8,22 @@ use App\Http\Requests\SuperAdmin\UpdateUserRequest;
 use App\Models\User;
 use App\Support\AuditLogger;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class UserManagementController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        return view('pages.super-admin.users.index', ['title' => 'Manajemen Pengguna', 'users' => User::orderBy('name')->orderBy('id')->paginate(15)]);
+        $search = mb_strtolower(trim((string) $request->query('search')));
+        $users = User::query()
+            ->when($search, fn ($query) => $query->where(fn ($nested) => $nested
+                ->whereRaw('LOWER(name) LIKE ?', ["%{$search}%"])
+                ->orWhereRaw('LOWER(email) LIKE ?', ["%{$search}%"])
+                ->orWhereRaw('LOWER(role) LIKE ?', ["%{$search}%"])))
+            ->orderBy('name')->orderBy('id')->paginate(15)->withQueryString();
+
+        return view('pages.super-admin.users.index', ['title' => 'Manajemen Pengguna', 'users' => $users]);
     }
 
     public function create(): View

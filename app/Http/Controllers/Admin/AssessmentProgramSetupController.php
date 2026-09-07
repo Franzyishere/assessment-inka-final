@@ -141,6 +141,6 @@ class AssessmentProgramSetupController extends Controller
             }
         });
 
-        return to_route('admin.assessment-programs.setup.edit', $assessmentProgram)->with('success', 'Susunan program dan penugasan berhasil disimpan.');
+        return to_route('admin.assessment-programs.index')->with('success', 'Susunan program dan penugasan berhasil disimpan.');
     }
 }

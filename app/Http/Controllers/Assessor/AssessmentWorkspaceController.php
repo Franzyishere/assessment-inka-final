@@ -15,6 +15,7 @@ class AssessmentWorkspaceController extends Controller
 {
     public function participants(Request $request): View
     {
+        $search = mb_strtolower(trim((string) $request->query('search')));
         $assignments = $this->assignments($request);
         $programs = $assignments
             ->groupBy(fn ($assignment) => $assignment->programSimulation->assessment_program_id)
@@ -32,7 +33,19 @@ class AssessmentWorkspaceController extends Controller
                 });
 
                 return $program;
-            })->values();
+            })
+            ->map(function ($program) use ($search) {
+                if (! $search || str_contains(mb_strtolower($program->name), $search)) {
+                    return $program;
+                }
+
+                $program->setRelation('participants', $program->participants->filter(fn ($participant) => str_contains(mb_strtolower($participant->user->name), $search)
+                    || str_contains(mb_strtolower($participant->user->email), $search))->values());
+
+                return $program;
+            })
+            ->filter(fn ($program) => ! $search || str_contains(mb_strtolower($program->name), $search) || $program->participants->isNotEmpty())
+            ->values();
 
         return view('pages.assessor.participants.index', [
             'title' => 'Peserta Assessment',
@@ -42,6 +55,7 @@ class AssessmentWorkspaceController extends Controller
 
     public function monitoring(Request $request): View
     {
+        $search = mb_strtolower(trim((string) $request->query('search')));
         $assignments = $this->assignments($request);
 
         $simulations = $assignments->map(function ($assignment) use ($request) {
@@ -66,7 +80,10 @@ class AssessmentWorkspaceController extends Controller
             $simulation->setAttribute('progress', $expected > 0 ? round(($submitted->count() / $expected) * 100) : 0);
 
             return $simulation;
-        });
+        })->filter(fn ($simulation) => ! $search
+            || str_contains(mb_strtolower($simulation->program->name), $search)
+            || str_contains(mb_strtolower($simulation->scenario->type->name), $search)
+            || str_contains(mb_strtolower($simulation->scenario->simulationThreePackageLabel() ?? ''), $search))->values();
 
         return view('pages.assessor.monitoring.index', [
             'title' => 'Monitoring Simulasi',

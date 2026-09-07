@@ -60,7 +60,12 @@ export function initializeRichTextEditors() {
         });
 
         root.querySelectorAll('[data-editor-command]').forEach(button => {
-            button.addEventListener('click', () => commands[button.dataset.editorCommand]?.(editor));
+            button.addEventListener('click', () => {
+                commands[button.dataset.editorCommand]?.(editor);
+
+                const tableMenu = button.closest('[data-editor-table-menu]');
+                if (tableMenu) tableMenu.open = false;
+            });
         });
         root.querySelector('[data-editor-font]')?.addEventListener('change', event => {
             const chain = editor.chain().focus();
