@@ -14,7 +14,7 @@
             <td class="px-5 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $item->simulations_count }}</td>
             <td class="px-5 py-3 text-sm text-gray-600 dark:text-gray-300">{{ $item->participants_count }}</td>
             <td class="px-5 py-3"><div class="flex max-w-md flex-wrap gap-1.5">@forelse($team as $assessor)<span class="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">{{ $assessor->name }}</span>@empty<span class="text-xs font-medium text-warning-600">Belum ditugaskan</span>@endforelse</div></td>
-            <td class="px-5 py-3"><a href="{{ route('admin.assessor-assignments.edit', $item) }}" class="crud-btn-soft-brand">Atur Tim</a></td>
+            <td class="px-5 py-3"><div class="crud-actions"><a href="{{ route('admin.assessor-assignments.edit', $item) }}" class="crud-btn-soft-brand">Atur Tim</a></div></td>
         </tr>@empty<tr><td colspan="5" class="px-5 py-12 text-center text-sm text-gray-500">Belum ada program yang memiliki simulasi.</td></tr>@endforelse</tbody>
     </table></div>
     @if($assessmentPrograms->hasPages())<div class="border-t border-gray-200 px-5 py-4 dark:border-gray-800">{{ $assessmentPrograms->links() }}</div>@endif

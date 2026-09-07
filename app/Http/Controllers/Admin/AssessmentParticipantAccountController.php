@@ -93,4 +93,33 @@ class AssessmentParticipantAccountController extends Controller
 
         return to_route('admin.participants.index')->with('success', 'Akun peserta berhasil dihapus.');
     }
+
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', 'exists:users,id'],
+        ], ['ids.required' => 'Pilih minimal satu peserta yang akan dihapus.']);
+
+        $participants = User::query()->where('role', User::ROLE_PESERTA_ASSESSMENT)
+            ->whereIn('id', $validated['ids'])->withCount('assessmentParticipations')->get();
+        $deletable = $participants->where('assessment_participations_count', 0);
+
+        foreach ($deletable as $participant) {
+            AuditLogger::record($request, 'participant.deleted', $participant, [
+                'name' => $participant->name,
+                'email' => $participant->email,
+                'deletion_mode' => 'bulk',
+            ]);
+            $participant->delete();
+        }
+
+        $skipped = count($validated['ids']) - $deletable->count();
+        $message = $deletable->count().' akun peserta berhasil dihapus.';
+        if ($skipped > 0) {
+            $message .= ' '.$skipped.' akun yang terikat program atau tidak valid dilewati.';
+        }
+
+        return to_route('admin.participants.index')->with($deletable->isEmpty() ? 'error' : 'success', $message);
+    }
 }

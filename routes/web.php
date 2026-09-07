@@ -38,6 +38,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:admin,super_admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
+        Route::delete('assessment-programs/bulk', [AssessmentProgramController::class, 'bulkDestroy'])->name('assessment-programs.bulk-destroy');
         Route::resource('assessment-programs', AssessmentProgramController::class)
             ->except(['show']);
         Route::get('assessment-programs/{assessmentProgram}/setup', [AssessmentProgramSetupController::class, 'edit'])->name('assessment-programs.setup.edit');
@@ -45,6 +46,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('simulations', SimulationScenarioController::class)
             ->parameters(['simulations' => 'simulationScenario'])
             ->only(['index', 'edit', 'update']);
+        Route::delete('participants/bulk', [AssessmentParticipantAccountController::class, 'bulkDestroy'])->name('participants.bulk-destroy');
         Route::resource('participants', AssessmentParticipantAccountController::class)->except(['show']);
         Route::get('/assessor-assignments', [AssessorAssignmentController::class, 'index'])->name('assessor-assignments.index');
         Route::get('/assessor-assignments/{assessmentProgram}/edit', [AssessorAssignmentController::class, 'edit'])->name('assessor-assignments.edit');

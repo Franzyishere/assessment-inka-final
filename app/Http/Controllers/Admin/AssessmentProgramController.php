@@ -71,4 +71,32 @@ class AssessmentProgramController extends Controller
 
         return to_route('admin.assessment-programs.index')->with('success', 'Program assessment berhasil dihapus.');
     }
+
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', 'exists:assessment_programs,id'],
+        ], ['ids.required' => 'Pilih minimal satu program yang akan dihapus.']);
+
+        $programs = AssessmentProgram::query()->whereIn('id', $validated['ids'])->get();
+        $deletable = $programs->where('status', 'draft');
+
+        foreach ($deletable as $program) {
+            AuditLogger::record($request, 'assessment_program.deleted', $program, [
+                'code' => $program->code,
+                'name' => $program->name,
+                'deletion_mode' => 'bulk',
+            ]);
+            $program->delete();
+        }
+
+        $skipped = $programs->count() - $deletable->count();
+        $message = $deletable->count().' program draft berhasil dihapus.';
+        if ($skipped > 0) {
+            $message .= ' '.$skipped.' program aktif/selesai dilewati.';
+        }
+
+        return to_route('admin.assessment-programs.index')->with($deletable->isEmpty() ? 'error' : 'success', $message);
+    }
 }

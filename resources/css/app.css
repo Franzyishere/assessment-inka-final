@@ -290,11 +290,27 @@
   }
 
   .crud-actions {
-    @apply flex flex-wrap items-center gap-1.5;
+    @apply flex flex-nowrap items-center justify-center gap-1.5;
+  }
+
+  .crud-actions > :is(a, button, form) {
+    @apply flex-none;
+  }
+
+  .crud-actions :is(a, button) {
+    @apply h-7 min-h-7 whitespace-nowrap;
+  }
+
+  td:has(> .crud-actions) {
+    @apply whitespace-nowrap align-middle text-center;
+  }
+
+  table:has(.crud-actions) > thead > tr > th:last-child {
+    @apply text-center;
   }
 
   .crud-btn-icon {
-    @apply size-7 min-h-7 px-0 py-0;
+    @apply size-7 min-h-7 shrink-0 px-0 py-0;
   }
 }
 

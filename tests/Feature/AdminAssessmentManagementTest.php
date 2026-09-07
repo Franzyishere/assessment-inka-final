@@ -205,3 +205,33 @@ test('admin can delete a draft program but cannot delete an active program', fun
         ->assertSessionHas('error');
     $this->assertDatabaseHas('assessment_programs', ['id' => $active->id]);
 });
+
+test('admin can bulk delete draft programs while protected programs remain', function () {
+    $admin = User::where('role', User::ROLE_ADMIN)->firstOrFail();
+    $drafts = collect(['Bulk Draft Satu', 'Bulk Draft Dua'])->map(fn ($name, $index) => AssessmentProgram::create([
+        'code' => 'BULK-DRAFT-'.$index, 'name' => $name, 'status' => 'draft', 'created_by' => $admin->id,
+    ]));
+    $active = AssessmentProgram::create(['code' => 'BULK-ACTIVE', 'name' => 'Bulk Aktif', 'status' => 'active', 'created_by' => $admin->id]);
+
+    $this->actingAs($admin)->delete(route('admin.assessment-programs.bulk-destroy'), [
+        'ids' => [...$drafts->pluck('id'), $active->id],
+    ])->assertRedirect(route('admin.assessment-programs.index'))->assertSessionHas('success');
+
+    foreach ($drafts as $draft) $this->assertDatabaseMissing('assessment_programs', ['id' => $draft->id]);
+    $this->assertDatabaseHas('assessment_programs', ['id' => $active->id]);
+});
+
+test('admin can bulk delete only participant accounts without program history', function () {
+    $admin = User::where('role', User::ROLE_ADMIN)->firstOrFail();
+    $free = User::factory()->create(['role' => User::ROLE_PESERTA_ASSESSMENT]);
+    $linked = User::factory()->create(['role' => User::ROLE_PESERTA_ASSESSMENT]);
+    $program = AssessmentProgram::create(['code' => 'BULK-PART', 'name' => 'Program Bulk Peserta', 'status' => 'draft', 'created_by' => $admin->id]);
+    AssessmentParticipant::create(['assessment_program_id' => $program->id, 'user_id' => $linked->id, 'status' => 'assigned']);
+
+    $this->actingAs($admin)->delete(route('admin.participants.bulk-destroy'), [
+        'ids' => [$free->id, $linked->id],
+    ])->assertRedirect(route('admin.participants.index'))->assertSessionHas('success');
+
+    $this->assertDatabaseMissing('users', ['id' => $free->id]);
+    $this->assertDatabaseHas('users', ['id' => $linked->id]);
+});
