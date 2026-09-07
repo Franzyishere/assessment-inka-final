@@ -7,8 +7,10 @@
 @php
     $siteName = 'INKA Assessment System';
     $metaTitle = $title === $siteName ? $siteName : $title.' | '.$siteName;
-    $metaImage = $image ?: asset('images/logo/imagesinka.png');
-    $metaUrl = url()->current();
+    $previewPath = 'images/backgrounds/gedung-inka-login.jpg';
+    $metaImage = $image ?: asset($previewPath).'?v='.filemtime(public_path($previewPath));
+    $previewSize = $image ? null : getimagesize(public_path($previewPath));
+    $metaUrl = route('login');
 @endphp
 
 <meta name="description" content="{{ $description }}">
@@ -21,14 +23,18 @@
 <meta property="og:description" content="{{ $description }}">
 <meta property="og:url" content="{{ $metaUrl }}">
 <meta property="og:image" content="{{ $metaImage }}">
+@if(str_starts_with($metaImage, 'https://'))
 <meta property="og:image:secure_url" content="{{ $metaImage }}">
-<meta property="og:image:type" content="image/png">
-<meta property="og:image:width" content="423">
-<meta property="og:image:height" content="133">
-<meta property="og:image:alt" content="Logo PT Industri Kereta Api (Persero)">
+@endif
+@if($previewSize)
+<meta property="og:image:type" content="{{ $previewSize['mime'] }}">
+<meta property="og:image:width" content="{{ $previewSize[0] }}">
+<meta property="og:image:height" content="{{ $previewSize[1] }}">
+@endif
+<meta property="og:image:alt" content="Gedung PT INKA — halaman masuk INKA Assessment System">
 
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{{ $metaTitle }}">
 <meta name="twitter:description" content="{{ $description }}">
 <meta name="twitter:image" content="{{ $metaImage }}">
-<meta name="twitter:image:alt" content="Logo PT Industri Kereta Api (Persero)">
+<meta name="twitter:image:alt" content="Gedung PT INKA — halaman masuk INKA Assessment System">

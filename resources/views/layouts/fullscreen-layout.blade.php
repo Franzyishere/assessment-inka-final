@@ -8,7 +8,7 @@
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon-inka-32.svg') }}?v={{ filemtime(public_path('favicon-inka-32.svg')) }}">
 
     <title>{{ $title ?? 'Dashboard' }} | INKA Assessment System</title>
-    <x-layout.open-graph :title="$title ?? 'Masuk'" />
+    <x-layout.open-graph title="Masuk" description="Masuk ke INKA Assessment System untuk mengakses jadwal, simulasi, dan hasil assessment PT Industri Kereta Api (Persero)." />
     @stack('meta')
 
     <!-- Scripts -->
