@@ -64,6 +64,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/participants', [AssessmentWorkspaceController::class, 'participants'])->name('participants.index');
         Route::put('/participants/{participant}/simulation-three-choice', [AssessmentWorkspaceController::class, 'updateSimulationThreeChoice'])->middleware('throttle:20,1')->name('participants.simulation-three-choice.update');
         Route::get('/monitoring', [AssessmentWorkspaceController::class, 'monitoring'])->name('monitoring.index');
+        Route::get('/monitoring/programs/{program}', [AssessmentWorkspaceController::class, 'monitoringProgram'])->name('monitoring.program');
         Route::get('/reviews', [SimulationReviewController::class, 'index'])->name('reviews.index');
         Route::get('/reviews/programs/{program}', [SimulationReviewController::class, 'program'])->name('reviews.program');
         Route::get('/reviews/{session}/edit', [SimulationReviewController::class, 'edit'])->name('reviews.edit');

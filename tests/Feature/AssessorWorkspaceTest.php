@@ -34,6 +34,10 @@ test('assessor sees participants and monitoring only for assigned simulations', 
         ->assertSee('1 / 1');
 
     $this->actingAs($assessor)->get(route('asesor.monitoring.index'))
+        ->assertOk()->assertSee('Program Asesor')
+        ->assertViewHas('programs', fn ($programs) => $programs->count() === 1);
+
+    $this->actingAs($assessor)->get(route('asesor.monitoring.program', $program))
         ->assertOk()
         ->assertSee('Simulasi 1 - Problem Analysis')
         ->assertViewHas('simulations', fn ($simulations) => $simulations->count() === 1 && $simulations->first()->is($assignedSimulation))
@@ -51,7 +55,10 @@ test('assessor without assignments sees empty workspace', function () {
         ->assertSee('Belum ada peserta');
     $this->actingAs($assessor)->get(route('asesor.monitoring.index'))
         ->assertOk()
-        ->assertSee('Belum ada simulasi');
+        ->assertSee('Program assessment tidak ditemukan');
+
+    $program = AssessmentProgram::create(['name' => 'Tidak Ditugaskan', 'code' => 'DENIED-MON', 'status' => 'active', 'created_by' => $assessor->id]);
+    $this->get(route('asesor.monitoring.program', $program))->assertForbidden();
 });
 
 test('active assignments are grouped by assessment program', function () {

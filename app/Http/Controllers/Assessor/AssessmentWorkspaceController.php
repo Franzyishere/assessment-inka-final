@@ -56,7 +56,21 @@ class AssessmentWorkspaceController extends Controller
     public function monitoring(Request $request): View
     {
         $search = mb_strtolower(trim((string) $request->query('search')));
-        $assignments = $this->assignments($request);
+        $programs = \App\Models\AssessmentProgram::query()
+            ->whereHas('simulations.assessorAssignments', fn ($query) => $query->where('assessor_id', $request->user()->id))
+            ->when($search !== '', fn ($query) => $query->whereRaw('LOWER(name) LIKE ?', ['%'.$search.'%']))
+            ->withCount('participants')
+            ->withCount(['simulations' => fn ($query) => $query->whereHas('assessorAssignments', fn ($q) => $q->where('assessor_id', $request->user()->id))])
+            ->latest('created_at')->orderByDesc('id')->paginate(12)->withQueryString();
+
+        return view('pages.assessor.monitoring.index', ['title' => 'Monitoring Program Assessment', 'programs' => $programs]);
+    }
+
+    public function monitoringProgram(Request $request, \App\Models\AssessmentProgram $program): View
+    {
+        abort_unless($program->simulations()->whereHas('assessorAssignments', fn ($query) => $query->where('assessor_id', $request->user()->id))->exists(), 403);
+        $search = mb_strtolower(trim((string) $request->query('search')));
+        $assignments = $this->assignments($request, $program->id);
 
         $simulations = $assignments->map(function ($assignment) use ($request) {
             $simulation = $assignment->programSimulation;
@@ -85,7 +99,8 @@ class AssessmentWorkspaceController extends Controller
             || str_contains(mb_strtolower($simulation->scenario->type->name), $search)
             || str_contains(mb_strtolower($simulation->scenario->simulationThreePackageLabel() ?? ''), $search))->values();
 
-        return view('pages.assessor.monitoring.index', [
+        return view('pages.assessor.monitoring.program', [
+            'program' => $program,
             'title' => 'Monitoring Simulasi',
             'simulations' => $simulations,
         ]);
@@ -139,10 +154,11 @@ class AssessmentWorkspaceController extends Controller
         return back()->with('success', 'Paket Simulasi 3 peserta berhasil ditetapkan.');
     }
 
-    private function assignments(Request $request)
+    private function assignments(Request $request, ?int $programId = null)
     {
         return AssessorAssignment::query()
             ->where('assessor_id', $request->user()->id)
+            ->when($programId, fn ($query) => $query->whereHas('programSimulation', fn ($q) => $q->where('assessment_program_id', $programId)))
             ->with([
                 'programSimulation.program.participants.user',
                 'programSimulation.program.participants.sessions.reviews',
