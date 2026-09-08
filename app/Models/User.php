@@ -38,6 +38,12 @@ class User extends Authenticatable
 
     public const ROLE_PESERTA_ASSESSMENT = 'peserta_assessment';
 
+    public const STAFF_ROLES = [
+        self::ROLE_SUPER_ADMIN,
+        self::ROLE_ADMIN,
+        self::ROLE_ASESOR,
+    ];
+
     public const ROLES = [
         self::ROLE_SUPER_ADMIN,
         self::ROLE_ADMIN,

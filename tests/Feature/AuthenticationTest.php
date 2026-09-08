@@ -8,7 +8,7 @@ test('login page is available to guests', function () {
         ->assertSee('property="og:title"', false)
         ->assertSee('property="og:description"', false)
         ->assertSee('property="og:image"', false)
-        ->assertSee(asset('images/logo/imagesinka.png'), false)
+        ->assertSee(asset('images/backgrounds/gedung-inka-login.jpg'), false)
         ->assertSee('name="twitter:card" content="summary_large_image"', false);
 });
 

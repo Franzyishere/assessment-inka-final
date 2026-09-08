@@ -13,7 +13,7 @@ class UpdateUserRequest extends StoreUserRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($this->route('user'))],
-            'role' => ['required', Rule::in(User::ROLES)],
+            'role' => ['required', Rule::in(User::STAFF_ROLES)],
             'password' => ['nullable', 'confirmed', Password::min(8)],
         ];
     }

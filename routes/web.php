@@ -31,7 +31,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:super_admin')->prefix('super-admin')->name('super-admin.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'superAdmin'])->name('dashboard');
-        Route::resource('users', UserManagementController::class)->except(['show', 'destroy']);
+        Route::resource('users', UserManagementController::class)->except(['show']);
         Route::get('/roles', [AccessControlController::class, 'index'])->name('roles.index');
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
     });

@@ -15,13 +15,6 @@
         "vite": "^7.0.4"
     },
     "dependencies": {
-        "@floating-ui/dom": "^1.7.4",
-        "@fullcalendar/core": "^6.1.19",
-        "@fullcalendar/daygrid": "^6.1.19",
-        "@fullcalendar/interaction": "^6.1.19",
-        "@fullcalendar/list": "^6.1.19",
-        "@fullcalendar/timegrid": "^6.1.19",
-        "@popperjs/core": "^2.11.8",
         "@tiptap/core": "^3.31.0",
         "@tiptap/extension-color": "^3.31.0",
         "@tiptap/extension-font-family": "^3.31.0",
@@ -34,10 +27,6 @@
         "@tiptap/extension-underline": "^3.31.0",
         "@tiptap/starter-kit": "^3.31.0",
         "alpinejs": "^3.14.9",
-        "apexcharts": "^5.3.5",
-        "flatpickr": "^4.6.13",
-        "jsvectormap": "^1.7.0",
-        "prismjs": "^1.30.0",
-        "swiper": "^12.0.3"
+        "apexcharts": "^5.3.5"
     }
 }

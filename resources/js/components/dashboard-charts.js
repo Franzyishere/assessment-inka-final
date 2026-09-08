@@ -60,7 +60,7 @@ export async function initializeDashboardCharts(root = document) {
                 background: { enabled: false },
             },
             noData: { text: 'Belum ada data' },
-            tooltip: { theme: 'dark', },
+            tooltip: { theme: 'dark',    },
         };
 
         const options = config.type === 'donut'
