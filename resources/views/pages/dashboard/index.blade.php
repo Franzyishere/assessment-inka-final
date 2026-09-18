@@ -3,7 +3,7 @@
 @section('content')
     <div class="dashboard-hero">
         <div class="relative z-1 max-w-2xl">
-            <p class="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-white/70">Assessment Management System</p>
+            <p class="mb-2 text-xs font-semibold tracking-[0.16em] text-white/70">INKA Assessment Portal <span class="mx-1 text-white/40" aria-hidden="true">·</span> Assess. Develop. Grow.</p>
             <h1 class="text-2xl font-semibold text-white sm:text-3xl">{{ $title }}</h1>
             <p class="mt-2 max-w-xl text-sm leading-6 text-white/75">{{ $description }}</p>
         </div>

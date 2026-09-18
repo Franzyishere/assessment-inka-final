@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Participant;
 
 use App\Http\Controllers\Controller;
 use App\Models\AssessmentParticipant;
+use App\Models\AssessmentProgram;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -11,6 +12,8 @@ class AssessmentScheduleController extends Controller
 {
     public function index(Request $request): View
     {
+        AssessmentProgram::activateDuePrograms();
+
         $participations = AssessmentParticipant::query()
             ->where('user_id', $request->user()->id)
             ->where('status', 'assigned')
@@ -32,11 +35,12 @@ class AssessmentScheduleController extends Controller
                     }
 
                     if ($participation->requiresSimulationThreeChoice()) {
-                        return $simulation->scenario->simulation_package === 'ci_3';
+                        return $simulation->scenario->simulation_package === $participation->pendingSimulationThreePackage();
                     }
 
                     return $simulation->scenario->simulation_package === $participation->simulationThreePackageKey();
                 })
+                ->sortBy(fn ($simulation) => $simulation->scenario->type->sequence ?? 999)
                 ->values());
         });
 

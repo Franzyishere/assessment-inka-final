@@ -288,11 +288,11 @@ add_steps(doc, [
 
 doc.add_heading("5.3 Paket Simulasi 3", level=2)
 add_table(doc, ["Paket", "Kategori Peserta"], [
-    ["Critical Incident 1", "Golongan I ke II, Promosi Spesialis Pratama, Promosi SPV"],
-    ["Critical Incident 2", "Golongan II ke III, Promosi Spesialis Muda"],
+    ["Critical Incident 1", "Golongan I ke II, Level Spesialis Pratama, Level SPV"],
+    ["Critical Incident 2", "Golongan II ke III, Level Spesialis Muda"],
     ["Critical Incident 3", "Golongan III ke IV; salah satu pilihan Spesialis Madya"],
-    ["In-Tray 1", "Promosi M"],
-    ["In-Tray 2", "Promosi SM"],
+    ["In-Tray 1", "Level M"],
+    ["In-Tray 2", "Level SM"],
     ["In-Tray 3", "Salah satu pilihan Spesialis Madya"],
 ], [5, 11])
 
@@ -386,7 +386,7 @@ doc.add_heading("7.4 Simulasi 1 — Problem Analysis", level=2)
 add_steps(doc, ["Mulai Simulasi 1.", "Aktifkan fullscreen.", "Baca PDF pada preview besar.", "Isi satu kolom jawaban penuh.", "Pilih Simpan & Kumpulkan. Sistem menolak jawaban wajib yang kosong."])
 
 doc.add_heading("7.5 Simulasi 2 — Leaderless Group Discussion", level=2)
-add_steps(doc, ["Simulasi 1 harus selesai terlebih dahulu.", "Mulai Simulasi 2 dan aktifkan fullscreen.", "Review PDF dan jawaban Simulasi 1 dalam kondisi read-only sebagai bahan LGD.", "Ikuti kegiatan LGD dan perhatikan timer.", "Centang konfirmasi lalu pilih Simpan & Kumpulkan."])
+add_steps(doc, ["Simulasi 1 harus selesai terlebih dahulu.", "Mulai Simulasi 2 dan aktifkan fullscreen.", "Review PDF dan jawaban Simulasi 1 dalam kondisi read-only sebagai bahan LGD.", "Ikuti kegiatan LGD dan perhatikan timer.", "Centang konfirmasi lalu pilih Simulasi Sudah Selesai."])
 add_note(doc, "Proses offline", "Laporan LGD dilaksanakan secara offline dan tidak diunggah melalui aplikasi.")
 
 doc.add_heading("7.6 Simulasi 3 — Critical Incident / In-Tray", level=2)
@@ -411,12 +411,12 @@ matrix = [
     ["Kenaikan Golongan I ke II", "Ya", "Ya", "CI 1", "—", "Ya"],
     ["Kenaikan Golongan II ke III", "Ya", "Ya", "CI 2", "—", "Ya"],
     ["Kenaikan Golongan III ke IV", "Ya", "Ya", "CI 3", "—", "Ya"],
-    ["Promosi SPV", "Ya", "Ya", "CI 1", "—", "Ya"],
-    ["Promosi Spesialis Pratama", "Ya", "Ya", "CI 1", "—", "Ya"],
-    ["Promosi M", "Ya", "Ya", "—", "In-Tray 1", "Ya"],
-    ["Promosi Spesialis Muda", "Ya", "Ya", "CI 2", "—", "Ya"],
-    ["Promosi SM", "Ya", "Ya", "—", "In-Tray 2", "Ya"],
-    ["Promosi Spesialis Madya", "Ya", "Ya", "Pilih CI 3", "atau In-Tray 3", "Ya"],
+    ["Level SPV", "Ya", "Ya", "CI 1", "—", "Ya"],
+    ["Level Spesialis Pratama", "Ya", "Ya", "CI 1", "—", "Ya"],
+    ["Level M", "Ya", "Ya", "—", "In-Tray 1", "Ya"],
+    ["Level Spesialis Muda", "Ya", "Ya", "CI 2", "—", "Ya"],
+    ["Level SM", "Ya", "Ya", "—", "In-Tray 2", "Ya"],
+    ["Level Spesialis Madya", "Ya", "Ya", "Pilih CI 3", "atau In-Tray 3", "Ya"],
 ]
 add_table(doc, ["Kategori", "PA", "LGD", "CI", "In-Tray", "Presentasi"], matrix, [5.2, 1.2, 1.2, 2.8, 3, 2.4])
 add_note(doc, "Catatan", "Wawancara setelah Critical Incident atau In-Tray dilakukan secara offline dan tidak menjadi input aplikasi.")

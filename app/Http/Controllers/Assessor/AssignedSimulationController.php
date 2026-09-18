@@ -49,6 +49,7 @@ class AssignedSimulationController extends Controller
 
         $assignments = $this->activeAssignments($request)
             ->filter(fn (AssessorAssignment $assignment) => $assignment->programSimulation->assessment_program_id === $program->id)
+            ->sortBy(fn (AssessorAssignment $assignment) => $assignment->programSimulation->scenario->type->sequence ?? 999)
             ->values();
 
         return view('pages.assessor.simulations.program', compact('program', 'assignments') + ['title' => $program->name]);

@@ -12,7 +12,7 @@ beforeEach(function () {
     $this->seed(DatabaseSeeder::class);
 });
 
-test('participant sees only their assigned assessment schedule', function () {
+test('participant cannot access schedule without invitation even when assigned', function () {
     $admin = User::where('role', User::ROLE_ADMIN)->firstOrFail();
     $participant = User::where('role', User::ROLE_PESERTA_ASSESSMENT)->firstOrFail();
     $otherParticipant = User::factory()->create(['role' => User::ROLE_PESERTA_ASSESSMENT]);
@@ -62,10 +62,7 @@ test('participant sees only their assigned assessment schedule', function () {
 
     $this->actingAs($participant)
         ->get(route('peserta-assessment.schedule.index'))
-        ->assertOk()
-        ->assertSee('Jadwal Assessment Peserta')
-        ->assertSee('Simulasi 1 - Problem Analysis')
-        ->assertSee('Akan Datang')
+        ->assertRedirect(route('login'))
         ->assertDontSee('Jadwal Peserta Lain');
 });
 

@@ -32,4 +32,21 @@ class AssessmentProgram extends Model
     {
         return $this->hasMany(AssessmentParticipant::class);
     }
+
+    public static function activateDuePrograms(): int
+    {
+        return static::where('status', 'draft')
+            ->whereNotNull('starts_at')
+            ->where('starts_at', '<=', now())
+            ->where(fn ($query) => $query->whereNull('ends_at')->orWhere('ends_at', '>', now()))
+            ->update(['status' => 'active']);
+    }
+
+    public function usesSharedSimulationThree(): bool
+    {
+        // The assigned scenario identifies the ruleset; no historical row is rewritten.
+        $this->loadMissing('simulations.scenario.type');
+
+        return $this->simulations->contains(fn ($simulation) => $simulation->scenario->usesSharedSimulationThreeMaterial());
+    }
 }

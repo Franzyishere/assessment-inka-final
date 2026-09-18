@@ -4,7 +4,7 @@
 <x-common.page-breadcrumb pageTitle="Detail Simulasi" />
 <div class="mx-auto max-w-4xl rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
     <span class="text-xs font-medium uppercase text-brand-500">{{ $programSimulation->scenario->type->name }}</span>
-    <h1 class="mt-2 text-2xl font-semibold text-gray-800 dark:text-white/90">{{ $participation->requiresSimulationThreeChoice() ? 'Paket Simulasi 3 Belum Ditetapkan' : ($programSimulation->scenario->simulationThreePackageLabel() ?? $programSimulation->scenario->type->name) }}</h1>
+    <h1 class="mt-2 text-2xl font-semibold text-gray-800 dark:text-white/90">{{ $programSimulation->scenario->type->delivery_mode === 'case_response' && $participation->requiresSimulationThreeChoice() ? 'Paket Simulasi 3 Belum Ditetapkan' : ($programSimulation->scenario->simulationThreePackageLabel() ?? $programSimulation->scenario->type->name) }}</h1>
     <p class="mt-3 text-sm leading-6 text-gray-500">{{ $programSimulation->scenario->description }}</p>
     <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div class="rounded-xl bg-gray-50 p-4 dark:bg-white/5"><span class="text-xs text-gray-500">Durasi</span><p class="mt-1 font-medium text-gray-800 dark:text-white/90">{{ $programSimulation->scenario->duration_minutes }} menit</p></div>
@@ -25,7 +25,7 @@
         <ul class="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-warning-700 dark:text-warning-400"><li>Pastikan koneksi internet stabil dan perangkat memiliki daya yang cukup.</li><li>Siapkan waktu sesuai durasi karena timer berjalan setelah tombol mulai ditekan.</li><li>Mode fullscreen wajib digunakan selama pengerjaan.</li><li>Jawaban yang sudah dikumpulkan tidak dapat diubah kembali.</li></ul>
     </div>
     @if($participation->requiresSimulationThreeChoice() && $programSimulation->scenario->type->delivery_mode === 'case_response')
-        <div class="mt-6 rounded-xl border border-warning-200 bg-warning-50 p-5 dark:border-warning-500/30 dark:bg-warning-500/10"><h2 class="text-sm font-semibold text-warning-800 dark:text-warning-300">Menunggu penetapan paket Simulasi 3</h2><p class="mt-2 text-sm leading-6 text-warning-700 dark:text-warning-400">Asesor akan menentukan apakah Anda mengerjakan Critical Incident 3 atau In-Tray 3. Simulasi dapat dimulai setelah paket ditetapkan.</p></div>
+        <div class="mt-6 rounded-xl border border-warning-200 bg-warning-50 p-5 dark:border-warning-500/30 dark:bg-warning-500/10"><h2 class="text-sm font-semibold text-warning-800 dark:text-warning-300">Menunggu penetapan paket Simulasi 3</h2><p class="mt-2 text-sm leading-6 text-warning-700 dark:text-warning-400">Admin akan menentukan CI materi panjang, CI materi pendek, atau In-Tray. Simulasi dapat dimulai setelah materi ditetapkan.</p></div>
     @endif
     <div class="mt-7 flex justify-end gap-3">
         <a href="{{ route('peserta-assessment.simulations.index') }}" class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 dark:border-gray-700 dark:text-gray-300">Kembali</a>
@@ -34,7 +34,7 @@
         @elseif ($session?->status === 'submitted')
             <span class="rounded-lg bg-success-50 px-5 py-2.5 text-sm font-medium text-success-700">Sudah dikumpulkan</span>
         @elseif ($participation->requiresSimulationThreeChoice() && $programSimulation->scenario->type->delivery_mode === 'case_response')
-            <span class="rounded-lg bg-warning-50 px-5 py-2.5 text-sm font-medium text-warning-700 dark:bg-warning-500/10 dark:text-warning-400">Menunggu penetapan asesor</span>
+            <span class="rounded-lg bg-warning-50 px-5 py-2.5 text-sm font-medium text-warning-700 dark:bg-warning-500/10 dark:text-warning-400">Menunggu penetapan admin</span>
         @elseif (in_array($programSimulation->scenario->type->delivery_mode, ['multi_page_response', 'file_upload', 'case_response'], true))
             <form method="POST" action="{{ route('peserta-assessment.simulations.start', $programSimulation) }}">@csrf<button class="rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600">Mulai Simulasi</button></form>
         @elseif ($programSimulation->scenario->type->delivery_mode === 'assessor_observation')

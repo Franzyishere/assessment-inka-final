@@ -7,8 +7,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon-inka-32.svg') }}?v={{ filemtime(public_path('favicon-inka-32.svg')) }}">
 
-    <title>{{ $title ?? 'Dashboard' }} | INKA Assessment System</title>
-    <x-layout.open-graph title="Masuk" description="Masuk ke INKA Assessment System untuk mengakses jadwal, simulasi, dan hasil assessment PT Industri Kereta Api (Persero)." />
+    <title>{{ $title ?? 'Dashboard' }} | INKA Assessment Portal</title>
+    <x-layout.open-graph title="Masuk" description="INKA Assessment Portal — Assess. Develop. Grow. Platform asesmen online PT INKA untuk mengenali potensi, mengembangkan kompetensi, dan membangun talenta masa depan INKA." />
     @stack('meta')
 
     <!-- Scripts -->

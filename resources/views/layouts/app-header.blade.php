@@ -94,7 +94,9 @@
                 </button>
 
                 <!-- Notification Dropdown -->
-                <x-header.notification-dropdown />
+                @if(auth()->user()?->role !== 'peserta_assessment')
+                    <x-header.notification-dropdown />
+                @endif
             </div>
 
             <!-- User Dropdown -->

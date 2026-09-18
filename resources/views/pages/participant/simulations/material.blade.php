@@ -8,7 +8,7 @@
         <div class="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             <div class="min-w-0">
                 <div class="flex items-center gap-2"><p class="text-xs font-medium uppercase text-brand-500">Halaman <span x-text="currentPage"></span> dari {{ $pageCount }}</p><span class="h-1 w-1 rounded-full bg-gray-300"></span><p class="text-xs text-gray-500">{{ $programSimulation->scenario->duration_minutes }} menit</p></div>
-                <h1 class="mt-1 truncate font-semibold text-gray-800 dark:text-white/90">{{ $programSimulation->scenario->type->name }}</h1>
+                <h1 class="mt-1 truncate font-semibold text-gray-800 dark:text-white/90">{{ $programSimulation->scenario->simulationThreePackageLabel() ?? $programSimulation->scenario->type->name }}</h1>
             </div>
             <div class="flex flex-wrap items-center gap-2 sm:flex-nowrap">
                 <button type="button" @click="enableFullscreen" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5">
@@ -29,7 +29,11 @@
         <section x-show="currentPage === {{ $currentNumber }}" x-cloak class="space-y-5">
             <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
                 <div class="flex items-center justify-between gap-4 border-b border-gray-200 px-5 py-4 dark:border-gray-800"><div><span class="text-xs font-medium text-brand-500">Materi {{ $currentNumber }}</span><h2 class="mt-1 font-semibold text-gray-800 dark:text-white/90">Uraian Simulasi</h2></div><span class="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 dark:bg-white/5 dark:text-gray-300"><svg class="size-3.5" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M6.5 9V6.75a3.5 3.5 0 0 1 7 0V9M5.75 9h8.5v7h-8.5V9Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Hanya baca</span></div>
-                <iframe title="Materi PDF {{ $currentNumber }} — hanya baca" src="{{ route('peserta-assessment.simulations.material.pdf', [$programSimulation, $pageMaterial]) }}#toolbar=0&navpanes=0&scrollbar=1&view=FitH" class="h-[72vh] min-h-[640px] w-full select-none bg-gray-100" referrerpolicy="same-origin"></iframe>
+                <div class="bg-gray-50/70 p-4 sm:p-5 lg:p-6 dark:bg-gray-900/30">
+                    <div class="mx-auto max-w-5xl overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xs dark:border-gray-700">
+                        <iframe title="Materi PDF {{ $currentNumber }} — hanya baca" src="{{ route('peserta-assessment.simulations.material.pdf', [$programSimulation, $pageMaterial]) }}#toolbar=0&navpanes=0&scrollbar=1&view=FitH" class="h-[52vh] min-h-[460px] max-h-[580px] w-full select-none bg-gray-100" referrerpolicy="same-origin"></iframe>
+                    </div>
+                </div>
                 @if($pageMaterial->content)<div class="border-t border-gray-200 px-5 py-4 text-sm text-gray-500 dark:border-gray-800">{{ $pageMaterial->content }}</div>@endif
             </div>
             <form method="POST" action="{{ route('peserta-assessment.simulations.material.save', [$programSimulation, $currentNumber]) }}" @if($currentNumber < $pageCount) @submit.prevent="saveAndContinue($event, {{ $currentNumber + 1 }})" @endif class="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
@@ -37,8 +41,10 @@
                 <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Jawaban Materi {{ $currentNumber }} @if($pageMaterial->is_required)<span class="text-error-500">*</span>@endif</label>
                 <x-forms.rich-text-editor name="response" :value="old('response', $responses[$currentNumber] ?? '')" :required="$pageMaterial->is_required" />
                 @if($pageNumber === $currentNumber) @error('response')<p class="mt-1 text-xs text-error-500">{{ $message }}</p>@enderror @endif
-                <div class="mt-5 flex items-center justify-between">
+                <div class="mt-5 flex items-center {{ $pageCount > 1 ? 'justify-between' : 'justify-end' }}">
+                    @if($pageCount > 1)
                     <button type="button" @click="goToPage(Math.max(1, currentPage - 1))" :disabled="currentPage === 1" class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-300">Sebelumnya</button>
+                    @endif
                     <button type="submit" @if($currentNumber === $pageCount) name="submit_after_save" value="1" @click.prevent="$dispatch('confirm-dialog', { title: 'Simpan dan kumpulkan?', message: 'Jawaban materi terakhir akan disimpan bersama seluruh jawaban, lalu tidak dapat diubah kembali.', confirmLabel: 'Ya, Kumpulkan', onConfirm: () => $el.form.requestSubmit($el) })" @endif :disabled="saving" class="rounded-lg px-5 py-2.5 text-sm font-medium text-white disabled:cursor-wait disabled:opacity-60 {{ $currentNumber === $pageCount ? 'bg-success-500 hover:bg-success-600' : 'bg-brand-500 hover:bg-brand-600' }}"><span x-text="saving && currentPage === {{ $currentNumber }} ? 'Menyimpan...' : '{{ $currentNumber === $pageCount ? 'Simpan & Kumpulkan' : 'Simpan & Berikutnya' }}'"></span></button>
                 </div>
             </form>

@@ -81,9 +81,15 @@ class DashboardController extends Controller
     {
         $participations = AssessmentParticipant::query()
             ->where('user_id', $request->user()->id)
-            ->with(['program:id,name', 'program.simulations:id,assessment_program_id,opens_at'])
+            ->with(['program:id,name', 'program.simulations:id,assessment_program_id,simulation_scenario_id,opens_at', 'program.simulations.scenario.type'])
             ->withCount(['sessions as submitted_count' => fn ($query) => $query->where('status', 'submitted')])
             ->get();
+        $participations->each(function ($participant): void {
+            $package = $participant->simulationThreePackageKey() ?? $participant->pendingSimulationThreePackage();
+            $participant->program->setRelation('simulations', $participant->program->simulations
+                ->filter(fn ($simulation) => $simulation->scenario->type->delivery_mode !== 'case_response'
+                    || $simulation->scenario->simulation_package === $package)->values());
+        });
         $simulationCount = $participations->sum(fn ($item) => $item->program->simulations->count());
         $submittedCount = $participations->sum('submitted_count');
         $nextSchedule = $participations->pluck('program.simulations')->flatten()

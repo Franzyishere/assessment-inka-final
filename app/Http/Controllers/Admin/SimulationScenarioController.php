@@ -60,16 +60,39 @@ class SimulationScenarioController extends Controller
             $data = $request->safe()->except('material_pages');
             $type = $simulationScenario->type;
             $this->validatePdfMaterials($request, $type, $simulationScenario);
+            $pages = $request->validated('material_pages', []);
+            // A material already assigned to a program is immutable. Publish a new
+            // catalog version while existing program links keep their original PDF.
+            if ($simulationScenario->usesSharedSimulationThreeMaterial() && $simulationScenario->programSimulations()->exists()) {
+                $original = $simulationScenario;
+                $simulationScenario = $original->replicate();
+                $simulationScenario->code = 'SYSTEM-'.Str::ulid();
+                $simulationScenario->created_by = $request->user()->id;
+                $simulationScenario->save();
+                foreach ($pages as $index => &$page) {
+                    $previous = $original->materialPages()->find($page['id'] ?? null);
+                    $page['id'] = null;
+                    if ($previous && ! $request->hasFile("material_pages.{$index}.attachment")) {
+                        $copy = $previous->replicate();
+                        $copy->simulation_scenario_id = $simulationScenario->id;
+                        $copy->attachment_path = 'simulation-materials/'.$simulationScenario->id.'/'.Str::uuid().'.pdf';
+                        abort_unless(Storage::disk('local')->copy($previous->attachment_path, $copy->attachment_path), 500, 'Materi gagal disalin. Silakan coba kembali.');
+                        $copy->save();
+                        $page['id'] = $copy->id;
+                    }
+                }
+                unset($page);
+            }
             $simulationScenario->update([
                 'description' => $data['description'] ?? null,
                 'duration_minutes' => $data['duration_minutes'] ?? null,
                 'title' => $type->name,
                 'status' => 'active',
             ]);
-            $this->syncMaterialPages($request, $simulationScenario, $request->validated('material_pages', []));
+            $this->syncMaterialPages($request, $simulationScenario, $pages);
         });
 
-        return to_route('admin.simulations.index')->with('success', 'Simulasi berhasil diperbarui.');
+        return to_route('admin.simulations.index')->with('success', 'Materi katalog berhasil disimpan. Program yang sudah memakai versi sebelumnya tetap menggunakan materinya; simpan pengaturan program yang belum dimulai untuk memakai versi terbaru.');
     }
 
     private function syncMaterialPages(StoreSimulationScenarioRequest $request, SimulationScenario $scenario, array $pages): void
@@ -81,7 +104,7 @@ class SimulationScenarioController extends Controller
                 'title' => $page['title'] ?: 'Materi '.($index + 1),
                 'content' => $page['content'] ?? null,
                 'page_order' => $index + 1,
-                'is_required' => (bool) ($page['is_required'] ?? true),
+                'is_required' => $scenario->usesSharedSimulationThreeMaterial() || (bool) ($page['is_required'] ?? true),
             ];
             $file = $request->file("material_pages.{$index}.attachment");
             $existing = isset($page['id']) ? $scenario->materialPages()->find($page['id']) : null;
@@ -116,13 +139,19 @@ class SimulationScenarioController extends Controller
 
     private function validatePdfMaterials(StoreSimulationScenarioRequest $request, SimulationType $type, ?SimulationScenario $scenario = null): void
     {
-        if (! in_array($type->delivery_mode, ['multi_page_response', 'case_response'], true)) {
+        if (! in_array($type->delivery_mode, ['multi_page_response', 'case_response', 'assessor_observation'], true)) {
             return;
         }
 
         $pages = $request->validated('material_pages', []);
+        if ($scenario?->usesSharedSimulationThreeMaterial() && count($pages) !== 1) {
+            throw ValidationException::withMessages(['material_pages' => 'Critical Incident dan In-Tray masing-masing harus memiliki tepat satu materi PDF.']);
+        }
         if ($type->delivery_mode === 'multi_page_response' && count($pages) !== 1) {
             throw ValidationException::withMessages(['material_pages' => 'Simulasi 1 harus memiliki tepat satu materi PDF.']);
+        }
+        if ($type->delivery_mode === 'assessor_observation' && count($pages) !== 1) {
+            throw ValidationException::withMessages(['material_pages' => 'LGD harus memiliki tepat satu file PDF instruksi.']);
         }
         if ($type->delivery_mode === 'case_response' && count($pages) < 1) {
             throw ValidationException::withMessages(['material_pages' => 'Simulasi 3 harus memiliki minimal satu materi PDF.']);

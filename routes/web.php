@@ -11,8 +11,6 @@ use App\Http\Controllers\Assessor\AssignedSimulationController;
 use App\Http\Controllers\Assessor\SimulationReviewController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\Participant\AssessmentResultController;
-use App\Http\Controllers\Participant\AssessmentScheduleController;
 use App\Http\Controllers\Participant\AssessmentSimulationController;
 use App\Http\Controllers\SuperAdmin\AccessControlController;
 use App\Http\Controllers\SuperAdmin\AuditLogController;
@@ -20,6 +18,9 @@ use App\Http\Controllers\SuperAdmin\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
+    Route::get('/assessment/invitations/{token}', [\App\Http\Controllers\Auth\AssessmentInvitationController::class, 'show'])->where('token', '[A-Za-z0-9]{64}')->name('assessment.invitation');
+    Route::post('/assessment/invitations/{token}/otp', [\App\Http\Controllers\Auth\AssessmentInvitationController::class, 'requestOtp'])->where('token', '[A-Za-z0-9]{64}')->middleware('throttle:assessment-otp')->name('assessment.invitation.otp');
+    Route::post('/assessment/invitations/{token}/verify', [\App\Http\Controllers\Auth\AssessmentInvitationController::class, 'verify'])->where('token', '[A-Za-z0-9]{64}')->middleware('throttle:assessment-verify')->name('assessment.invitation.verify');
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
 });
@@ -37,6 +38,10 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('role:admin,super_admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/invitations', [\App\Http\Controllers\Admin\AssessmentInvitationController::class, 'index'])->name('invitations.index');
+        Route::get('/invitations/{assessmentProgram}', [\App\Http\Controllers\Admin\AssessmentInvitationController::class, 'show'])->name('invitations.show');
+        Route::post('/invitations/{assessmentProgram}', [\App\Http\Controllers\Admin\AssessmentInvitationController::class, 'send'])->middleware('throttle:10,1')->name('invitations.send');
+        Route::delete('/invitations/{assessmentProgram}/{invitation}', [\App\Http\Controllers\Admin\AssessmentInvitationController::class, 'revoke'])->name('invitations.revoke');
         Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
         Route::delete('assessment-programs/bulk', [AssessmentProgramController::class, 'bulkDestroy'])->name('assessment-programs.bulk-destroy');
         Route::resource('assessment-programs', AssessmentProgramController::class)
@@ -64,7 +69,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/submissions/{submission}/preview', [AssignedSimulationController::class, 'preview'])->name('submissions.preview');
         Route::get('/simulations/{programSimulation}/materials/{material}/preview', [AssignedSimulationController::class, 'materialPreview'])->name('materials.preview');
         Route::get('/participants', [AssessmentWorkspaceController::class, 'participants'])->name('participants.index');
-        Route::put('/participants/{participant}/simulation-three-choice', [AssessmentWorkspaceController::class, 'updateSimulationThreeChoice'])->middleware('throttle:20,1')->name('participants.simulation-three-choice.update');
         Route::get('/monitoring', [AssessmentWorkspaceController::class, 'monitoring'])->name('monitoring.index');
         Route::get('/monitoring/programs/{program}', [AssessmentWorkspaceController::class, 'monitoringProgram'])->name('monitoring.program');
         Route::get('/reviews', [SimulationReviewController::class, 'index'])->name('reviews.index');
@@ -74,7 +78,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('role:peserta_assessment')->prefix('peserta-assessment')->name('peserta-assessment.')->group(function () {
-        Route::get('/dashboard', [DashboardController::class, 'pesertaAssessment'])->name('dashboard');
+        Route::get('/dashboard', fn () => to_route('peserta-assessment.simulations.index'))->name('dashboard');
         Route::get('/simulations', [AssessmentSimulationController::class, 'index'])->name('simulations.index');
         Route::get('/simulations/{programSimulation}', [AssessmentSimulationController::class, 'show'])->name('simulations.show');
         Route::post('/simulations/{programSimulation}/start', [AssessmentSimulationController::class, 'start'])->name('simulations.start');
@@ -89,8 +93,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/simulations/{programSimulation}/presentation', [AssessmentSimulationController::class, 'submitPresentation'])->name('simulations.presentation.submit');
         Route::get('/simulations/{programSimulation}/case-response', [AssessmentSimulationController::class, 'caseResponse'])->name('simulations.case-response');
         Route::post('/simulations/{programSimulation}/case-response', [AssessmentSimulationController::class, 'submitCaseResponse'])->name('simulations.case-response.submit');
-        Route::get('/schedule', [AssessmentScheduleController::class, 'index'])->name('schedule.index');
-        Route::get('/results', [AssessmentResultController::class, 'index'])->name('results.index');
+        Route::get('/schedule', fn () => to_route('peserta-assessment.simulations.index'))->name('schedule.index');
+        Route::get('/results', fn () => to_route('peserta-assessment.simulations.index'))->name('results.index');
     });
 
 });

@@ -1,5 +1,9 @@
 <?php
 
+// Exercise assessment business rules independently; real invitation/OTP gating is
+// covered without middleware bypass in AssessmentInvitationAccessTest.
+beforeEach(fn () => $this->withoutMiddleware(\App\Http\Middleware\EnsureAssessmentInvitation::class));
+
 use App\Models\AssessmentParticipant;
 use App\Models\AssessmentProgram;
 use App\Models\AssessmentProgramSimulation;
@@ -23,7 +27,7 @@ test('admin can view assessment program and simulation management pages', functi
     $this->actingAs($admin)->get(route('admin.assessment-programs.index'))->assertOk();
     $this->actingAs($admin)->get(route('admin.assessment-programs.create'))->assertOk();
     $this->actingAs($admin)->get(route('admin.simulations.index'))->assertOk()->assertSee('Kelola materi dan durasi')->assertDontSee('Buat Simulasi');
-    expect(SimulationScenario::count())->toBe(9)
+    expect(SimulationScenario::count())->toBe(6)
         ->and(Route::has('admin.simulations.create'))->toBeFalse()
         ->and(Route::has('admin.simulations.destroy'))->toBeFalse();
 });
@@ -99,7 +103,7 @@ test('admin can update the fixed problem analysis material', function () {
     Storage::disk('local')->assertExists($scenario->materialPages()->first()->attachment_path);
 });
 
-test('admin can update the fixed leaderless group discussion without pdf material', function () {
+test('admin must upload one instruction pdf for leaderless group discussion', function () {
     $admin = User::query()->where('role', User::ROLE_ADMIN)->firstOrFail();
     $type = SimulationType::query()->where('code', SimulationType::LGD)->firstOrFail();
     $this->actingAs($admin)->get(route('admin.simulations.index'));
@@ -109,10 +113,23 @@ test('admin can update the fixed leaderless group discussion without pdf materia
         'simulation_type_id' => $type->id,
         'description' => 'LGD menggunakan materi dan jawaban Problem Analysis.',
         'status' => 'active',
+    ])->assertSessionHasErrors('material_pages');
+
+    $this->actingAs($admin)->put(route('admin.simulations.update', $scenario), [
+        'simulation_type_id' => $type->id,
+        'description' => 'LGD menggunakan materi dan jawaban Problem Analysis.',
+        'status' => 'active',
+        'material_pages' => [[
+            'title' => 'Instruksi LGD',
+            'is_required' => 1,
+            'attachment' => UploadedFile::fake()->create('instruksi-lgd.pdf', 100, 'application/pdf'),
+        ]],
     ])->assertRedirect(route('admin.simulations.index'));
 
     expect($scenario->title)->toBe($type->name)
-        ->and($scenario->materialPages()->count())->toBe(0);
+        ->and($scenario->materialPages()->count())->toBe(1)
+        ->and($scenario->materialPages()->first()->attachment_name)->toBe('instruksi-lgd.pdf');
+    Storage::disk('local')->assertExists($scenario->materialPages()->first()->attachment_path);
 });
 
 test('assessment participant cannot access admin management pages', function () {

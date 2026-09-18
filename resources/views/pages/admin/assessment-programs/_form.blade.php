@@ -30,6 +30,7 @@
                         <option value="{{ $value }}" @selected(old('status', $program->status ?? 'draft') === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Program berstatus Draft akan otomatis aktif saat waktu Mulai tiba.</p>
             </div>
         </div>
     </div>

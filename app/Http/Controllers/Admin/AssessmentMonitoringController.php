@@ -29,6 +29,8 @@ class AssessmentMonitoringController extends Controller
             'simulations.sessions.events',
         ]);
 
+        $assessmentProgram->setRelation('simulations', $assessmentProgram->simulations->sortBy(fn ($simulation) => $simulation->scenario->type->sequence ?? 999)->values());
+
         $sessions = $assessmentProgram->simulations->pluck('sessions')->flatten();
         $expectedSessions = $assessmentProgram->simulations->sum(function ($simulation) use ($assessmentProgram) {
             if ($simulation->scenario->type->delivery_mode !== 'case_response') {

@@ -53,6 +53,7 @@ class MenuHelper
                 self::item('pages', 'Program', 'admin.assessment-programs.index'),
                 self::item('forms', 'Bank Simulasi', 'admin.simulations.index'),
                 self::item('user-profile', 'Peserta', 'admin.participants.index'),
+                self::item('calendar', 'Undangan', 'admin.invitations.index'),
                 self::item('task', 'Penugasan Asesor', 'admin.assessor-assignments.index'),
                 self::item('charts', 'Monitoring', 'admin.monitoring.index'),
             ]],
@@ -74,6 +75,7 @@ class MenuHelper
                 self::item('pages', 'Program', 'admin.assessment-programs.index'),
                 self::item('forms', 'Bank Simulasi', 'admin.simulations.index'),
                 self::item('user-profile', 'Peserta', 'admin.participants.index'),
+                self::item('calendar', 'Undangan', 'admin.invitations.index'),
                 self::item('task', 'Penugasan Asesor', 'admin.assessor-assignments.index'),
                 self::item('charts', 'Monitoring', 'admin.monitoring.index'),
             ]],
@@ -98,13 +100,8 @@ class MenuHelper
     private static function assessmentParticipantGroups(): array
     {
         return [
-            ['title' => 'Umum', 'items' => [
-                self::item('dashboard', 'Dashboard', 'peserta-assessment.dashboard'),
-            ]],
             ['title' => 'Assessment', 'items' => [
                 self::item('forms', 'Simulasi Saya', 'peserta-assessment.simulations.index'),
-                self::item('calendar', 'Jadwal Assessment', 'peserta-assessment.schedule.index'),
-                self::item('task', 'Hasil & Rekomendasi', 'peserta-assessment.results.index'),
             ]],
         ];
     }
@@ -119,6 +116,7 @@ class MenuHelper
             self::item('pages', 'Program Assessment', 'admin.assessment-programs.index'),
             self::item('forms', 'Bank Simulasi', 'admin.simulations.index'),
             self::item('user-profile', 'Peserta Assessment', 'admin.participants.index'),
+            self::item('calendar', 'Undangan Assessment', 'admin.invitations.index'),
             self::item('task', 'Penugasan Asesor', 'admin.assessor-assignments.index'),
             self::item('charts', 'Monitoring', 'admin.monitoring.index'),
         ];
@@ -131,6 +129,7 @@ class MenuHelper
             self::item('pages', 'Program Assessment', 'admin.assessment-programs.index'),
             self::item('forms', 'Bank Simulasi', 'admin.simulations.index'),
             self::item('user-profile', 'Peserta Assessment', 'admin.participants.index'),
+            self::item('calendar', 'Undangan Assessment', 'admin.invitations.index'),
             self::item('task', 'Penugasan Asesor', 'admin.assessor-assignments.index'),
             self::item('charts', 'Monitoring', 'admin.monitoring.index'),
         ];
@@ -150,10 +149,7 @@ class MenuHelper
     private static function pesertaAssessmentItems(): array
     {
         return [
-            self::item('dashboard', 'Dashboard', 'peserta-assessment.dashboard'),
             self::item('forms', 'Simulasi Saya', 'peserta-assessment.simulations.index'),
-            self::item('calendar', 'Jadwal Assessment', 'peserta-assessment.schedule.index'),
-            self::item('task', 'Hasil & Rekomendasi', 'peserta-assessment.results.index'),
         ];
     }
 

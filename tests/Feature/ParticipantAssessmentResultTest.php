@@ -12,7 +12,7 @@ use Database\Seeders\DatabaseSeeder;
 
 beforeEach(function () { $this->seed(DatabaseSeeder::class); });
 
-test('participant only sees their own finalized assessment recommendations', function () {
+test('participant cannot read historic recommendations without an invitation and records are retained', function () {
     $admin = User::where('role', User::ROLE_ADMIN)->firstOrFail();
     $assessor = User::where('role', User::ROLE_ASESOR)->firstOrFail();
     $participantUser = User::where('role', User::ROLE_PESERTA_ASSESSMENT)->firstOrFail();
@@ -29,5 +29,6 @@ test('participant only sees their own finalized assessment recommendations', fun
     }
 
     $this->actingAs($participantUser)->get(route('peserta-assessment.results.index'))
-        ->assertOk()->assertSee('Catatan pengembangan peserta.')->assertDontSee('CATATAN RAHASIA PESERTA LAIN');
+        ->assertRedirect(route('login'))->assertDontSee('Catatan pengembangan peserta.')->assertDontSee('CATATAN RAHASIA PESERTA LAIN');
+    expect(SimulationReview::count())->toBe(2);
 });

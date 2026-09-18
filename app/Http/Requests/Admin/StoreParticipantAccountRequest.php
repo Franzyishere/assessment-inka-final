@@ -5,7 +5,6 @@ namespace App\Http\Requests\Admin;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 
 class StoreParticipantAccountRequest extends FormRequest
 {
@@ -20,7 +19,6 @@ class StoreParticipantAccountRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')],
             'employee_number' => ['nullable', 'string', 'max:100', Rule::unique('users')],
-            'password' => ['required', 'confirmed', Password::min(8)],
         ];
     }
 }

@@ -4,11 +4,9 @@ namespace App\Http\Controllers\Assessor;
 
 use App\Http\Controllers\Controller;
 use App\Models\AssessmentParticipant;
+use App\Models\AssessmentProgram;
 use App\Models\AssessorAssignment;
-use App\Support\AuditLogger;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class AssessmentWorkspaceController extends Controller
@@ -56,7 +54,7 @@ class AssessmentWorkspaceController extends Controller
     public function monitoring(Request $request): View
     {
         $search = mb_strtolower(trim((string) $request->query('search')));
-        $programs = \App\Models\AssessmentProgram::query()
+        $programs = AssessmentProgram::query()
             ->whereHas('simulations.assessorAssignments', fn ($query) => $query->where('assessor_id', $request->user()->id))
             ->when($search !== '', fn ($query) => $query->whereRaw('LOWER(name) LIKE ?', ['%'.$search.'%']))
             ->withCount('participants')
@@ -66,7 +64,7 @@ class AssessmentWorkspaceController extends Controller
         return view('pages.assessor.monitoring.index', ['title' => 'Monitoring Program Assessment', 'programs' => $programs]);
     }
 
-    public function monitoringProgram(Request $request, \App\Models\AssessmentProgram $program): View
+    public function monitoringProgram(Request $request, AssessmentProgram $program): View
     {
         abort_unless($program->simulations()->whereHas('assessorAssignments', fn ($query) => $query->where('assessor_id', $request->user()->id))->exists(), 403);
         $search = mb_strtolower(trim((string) $request->query('search')));
@@ -97,61 +95,15 @@ class AssessmentWorkspaceController extends Controller
         })->filter(fn ($simulation) => ! $search
             || str_contains(mb_strtolower($simulation->program->name), $search)
             || str_contains(mb_strtolower($simulation->scenario->type->name), $search)
-            || str_contains(mb_strtolower($simulation->scenario->simulationThreePackageLabel() ?? ''), $search))->values();
+            || str_contains(mb_strtolower($simulation->scenario->simulationThreePackageLabel() ?? ''), $search))
+          ->sortBy(fn ($simulation) => $simulation->scenario->type->sequence ?? 999)
+          ->values();
 
         return view('pages.assessor.monitoring.program', [
             'program' => $program,
             'title' => 'Monitoring Simulasi',
             'simulations' => $simulations,
         ]);
-    }
-
-    public function updateSimulationThreeChoice(Request $request, AssessmentParticipant $participant): RedirectResponse
-    {
-        $validated = $request->validate([
-            'simulation_package' => ['required', 'string', 'in:ci_3,in_tray_3'],
-        ], [
-            'simulation_package.required' => 'Pilih paket Critical Incident 3 atau In-Tray 3.',
-            'simulation_package.in' => 'Paket Simulasi 3 yang dipilih tidak valid.',
-        ]);
-
-        $hasProgramAssignment = AssessorAssignment::query()
-            ->where('assessor_id', $request->user()->id)
-            ->whereHas('programSimulation', fn ($query) => $query
-                ->where('assessment_program_id', $participant->assessment_program_id))
-            ->exists();
-        abort_unless($hasProgramAssignment, 403);
-
-        DB::transaction(function () use ($request, $participant, $validated): void {
-            $lockedParticipant = AssessmentParticipant::query()->lockForUpdate()->findOrFail($participant->id);
-            abort_unless($lockedParticipant->status === 'assigned', 422, 'Peserta sudah tidak aktif pada program assessment ini.');
-            abort_unless($lockedParticipant->assessment_category === AssessmentParticipant::MADYA_CATEGORY, 422, 'Pemilihan CI/In-Tray hanya berlaku untuk peserta Promosi Spesialis Madya.');
-
-            $simulationExists = $lockedParticipant->program->simulations()
-                ->whereHas('scenario', fn ($query) => $query->where('simulation_package', $validated['simulation_package']))
-                ->exists();
-            abort_unless($simulationExists, 422, 'Paket yang dipilih belum tersedia pada Program Assessment ini.');
-
-            $hasStartedSimulationThree = $lockedParticipant->sessions()
-                ->whereHas('programSimulation.scenario', fn ($query) => $query
-                    ->whereIn('simulation_package', ['ci_3', 'in_tray_3']))
-                ->exists();
-            abort_if($hasStartedSimulationThree, 409, 'Pilihan tidak dapat diubah karena peserta sudah memulai Simulasi 3.');
-
-            $previousChoice = $lockedParticipant->simulation_three_choice;
-            $lockedParticipant->update([
-                'simulation_three_choice' => $validated['simulation_package'],
-                'simulation_three_chosen_at' => now(),
-            ]);
-
-            AuditLogger::record($request, 'assessor.simulation_three_choice.updated', $lockedParticipant, [
-                'previous_choice' => $previousChoice,
-                'simulation_package' => $validated['simulation_package'],
-                'program_id' => $lockedParticipant->assessment_program_id,
-            ]);
-        });
-
-        return back()->with('success', 'Paket Simulasi 3 peserta berhasil ditetapkan.');
     }
 
     private function assignments(Request $request, ?int $programId = null)

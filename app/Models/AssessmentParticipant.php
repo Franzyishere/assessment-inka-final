@@ -9,18 +9,23 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AssessmentParticipant extends Model
 {
+    public function invitation(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(AssessmentInvitation::class);
+    }
+
     use HasFactory;
 
     public const CATEGORIES = [
         'grade_1_to_2' => 'Kenaikan Golongan I ke II',
         'grade_2_to_3' => 'Kenaikan Golongan II ke III',
         'grade_3_to_4' => 'Kenaikan Golongan III ke IV',
-        'promotion_spv' => 'Promosi SPV',
-        'promotion_specialist_young' => 'Promosi Spesialis Muda',
-        'promotion_specialist_middle' => 'Promosi Spesialis Madya',
-        'promotion_specialist_pratama' => 'Promosi Spesialis Pratama',
-        'promotion_m' => 'Promosi M',
-        'promotion_sm' => 'Promosi SM',
+        'promotion_spv' => 'Level SPV',
+        'promotion_specialist_young' => 'Level Spesialis Muda',
+        'promotion_specialist_middle' => 'Level Spesialis Madya',
+        'promotion_specialist_pratama' => 'Level Spesialis Pratama',
+        'promotion_m' => 'Level M',
+        'promotion_sm' => 'Level SM',
     ];
 
     public const IN_TRAY_CATEGORIES = ['promotion_m', 'promotion_sm'];
@@ -46,11 +51,45 @@ class AssessmentParticipant extends Model
 
     public function requiresSimulationThreeChoice(): bool
     {
-        return $this->assessment_category === self::MADYA_CATEGORY && ! $this->simulation_three_choice;
+        return ($this->usesSharedSimulationThree() || $this->assessment_category === self::MADYA_CATEGORY)
+            && ! $this->simulationThreePackageKey();
+    }
+
+    public function usesSharedSimulationThree(): bool
+    {
+        return $this->program->usesSharedSimulationThree();
+    }
+
+    public function suggestedSimulationThreePackage(): ?string
+    {
+        return in_array($this->assessment_category, self::IN_TRAY_CATEGORIES, true) ? 'in_tray' : null;
+    }
+
+    public function pendingSimulationThreePackage(): string
+    {
+        if (! $this->usesSharedSimulationThree()) {
+            return 'ci_3';
+        }
+
+        $available = $this->program->simulations->pluck('scenario.simulation_package')->filter();
+
+        return $available->contains($this->suggestedSimulationThreePackage())
+            ? $this->suggestedSimulationThreePackage()
+            : ($available->first() ?? 'ci_short');
     }
 
     public function simulationThreePackageKey(): ?string
     {
+        if ($this->usesSharedSimulationThree()) {
+            return (array_key_exists((string) $this->simulation_three_choice, SimulationScenario::SIMULATION_THREE_PACKAGES)
+                || $this->simulation_three_choice === 'ci')
+                ? $this->simulation_three_choice : null;
+        }
+
+        if ($this->simulation_three_choice) {
+            return $this->simulation_three_choice;
+        }
+
         if ($this->assessment_category === self::MADYA_CATEGORY) {
             return $this->simulation_three_choice;
         }
@@ -72,7 +111,9 @@ class AssessmentParticipant extends Model
         }
 
         if ($this->requiresSimulationThreeChoice()) {
-            return in_array($package, ['ci_3', 'in_tray_3'], true);
+            return $this->usesSharedSimulationThree()
+                ? (array_key_exists($package, SimulationScenario::SIMULATION_THREE_PACKAGES) || $package === 'ci')
+                : in_array($package, ['ci_3', 'in_tray_3'], true);
         }
 
         return $this->simulationThreePackageKey() === $package;

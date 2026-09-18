@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Participant;
 
 use App\Http\Controllers\Controller;
 use App\Models\AssessmentParticipant;
+use App\Models\AssessmentProgram;
 use App\Models\AssessmentProgramSimulation;
 use App\Models\SimulationMaterialPage;
 use App\Models\SimulationSession;
@@ -14,6 +15,7 @@ use App\Support\RichTextSanitizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -22,13 +24,16 @@ class AssessmentSimulationController extends Controller
 {
     public function index(Request $request): View
     {
+        AssessmentProgram::activateDuePrograms();
+
         $participations = AssessmentParticipant::query()
+            ->when($request->attributes->get('assessment_invitation'), fn ($query, $invitation) => $query->whereKey($invitation->assessment_participant_id))
             ->where('user_id', $request->user()->id)
             ->where('status', 'assigned')
             ->whereHas('program', fn ($query) => $query
                 ->where('status', 'active')
                 ->where(fn ($timeQuery) => $timeQuery->whereNull('ends_at')->orWhere('ends_at', '>', now())))
-            ->with(['program.simulations' => fn ($query) => $query->orderBy('id'), 'program.simulations.scenario.type', 'sessions'])
+            ->with(['program.simulations.scenario.type', 'sessions'])
             ->latest('assigned_at')
             ->get();
 
@@ -48,11 +53,12 @@ class AssessmentSimulationController extends Controller
                     }
 
                     if ($participation->requiresSimulationThreeChoice()) {
-                        return $simulation->scenario->simulation_package === 'ci_3';
+                        return $simulation->scenario->simulation_package === $participation->pendingSimulationThreePackage();
                     }
 
                     return $simulation->scenario->simulation_package === $participation->simulationThreePackageKey();
                 })
+                ->sortBy(fn ($simulation) => $simulation->scenario->type->sequence ?? 999)
                 ->values());
         });
 
@@ -86,51 +92,62 @@ class AssessmentSimulationController extends Controller
 
     public function start(Request $request, AssessmentProgramSimulation $programSimulation): RedirectResponse
     {
-        [$participation, $programSimulation] = $this->resolveAssignment($request, $programSimulation);
-        if ($programSimulation->scenario->type->delivery_mode === 'case_response') {
-            abort_if($participation->requiresSimulationThreeChoice(), 422, 'Paket Simulasi 3 belum ditetapkan oleh asesor.');
-            abort_unless($programSimulation->scenario->simulation_package === $participation->simulationThreePackageKey(), 404);
-        }
-        abort_unless($this->isAvailable($programSimulation), 403, 'Simulasi belum tersedia atau sudah ditutup.');
-        abort_unless(in_array($programSimulation->scenario->type->delivery_mode, ['multi_page_response', 'file_upload', 'case_response', 'assessor_observation'], true), 403, 'Flow simulasi ini belum tersedia.');
+        // Serialize starts and admin selections on the same participant row.
+        return DB::transaction(function () use ($request, $programSimulation): RedirectResponse {
+            AssessmentProgram::query()->lockForUpdate()->findOrFail($programSimulation->assessment_program_id);
+            $programSimulation = AssessmentProgramSimulation::query()->findOrFail($programSimulation->id);
+            [$participation, $programSimulation] = $this->resolveAssignment($request, $programSimulation);
+            $participation = AssessmentParticipant::query()->lockForUpdate()->findOrFail($participation->id);
+            if ($programSimulation->scenario->type->delivery_mode === 'case_response') {
+                abort_if($participation->requiresSimulationThreeChoice(), 422, 'Paket Simulasi 3 belum ditetapkan oleh admin.');
+                abort_unless($programSimulation->scenario->simulation_package === $participation->simulationThreePackageKey(), 404);
+                if ($programSimulation->scenario->usesSharedSimulationThreeMaterial()) {
+                    $material = $programSimulation->scenario->materialPages->first();
+                    abort_unless($programSimulation->scenario->materialPages->count() === 1 && $material?->attachment_path
+                        && Storage::disk('local')->exists($material->attachment_path), 422, 'Materi PDF belum siap. Hubungi admin.');
+                }
+            }
+            abort_unless($this->isAvailable($programSimulation), 403, 'Simulasi belum tersedia atau sudah ditutup.');
+            abort_unless(in_array($programSimulation->scenario->type->delivery_mode, ['multi_page_response', 'file_upload', 'case_response', 'assessor_observation'], true), 403, 'Flow simulasi ini belum tersedia.');
 
-        if ($programSimulation->scenario->type->delivery_mode === 'assessor_observation') {
-            $problemAnalysisCompleted = SimulationSession::query()
-                ->where('assessment_participant_id', $participation->id)
-                ->where('status', 'submitted')
-                ->whereHas('programSimulation', fn ($query) => $query->where('assessment_program_id', $programSimulation->assessment_program_id))
-                ->whereHas('programSimulation.scenario.type', fn ($query) => $query->where('code', SimulationType::PROBLEM_ANALYSIS))
-                ->exists();
-            abort_unless($problemAnalysisCompleted, 422, 'Simulasi 1 harus dikumpulkan sebelum Simulasi 2 dapat dimulai.');
-        }
+            if ($programSimulation->scenario->type->delivery_mode === 'assessor_observation') {
+                $problemAnalysisCompleted = SimulationSession::query()
+                    ->where('assessment_participant_id', $participation->id)
+                    ->where('status', 'submitted')
+                    ->whereHas('programSimulation', fn ($query) => $query->where('assessment_program_id', $programSimulation->assessment_program_id))
+                    ->whereHas('programSimulation.scenario.type', fn ($query) => $query->where('code', SimulationType::PROBLEM_ANALYSIS))
+                    ->exists();
+                abort_unless($problemAnalysisCompleted, 422, 'Simulasi 1 harus dikumpulkan sebelum Simulasi 2 dapat dimulai.');
+            }
 
-        $session = $this->session($programSimulation, $participation);
-        abort_if($session?->status === 'submitted', 403, 'Simulasi sudah dikumpulkan.');
+            $session = $this->session($programSimulation, $participation);
+            abort_if($session?->status === 'submitted', 403, 'Simulasi sudah dikumpulkan.');
 
-        $session ??= new SimulationSession([
-            'assessment_program_simulation_id' => $programSimulation->id,
-            'assessment_participant_id' => $participation->id,
-        ]);
-        if (! $session->started_at) {
-            $session->fill([
-                'status' => 'in_progress',
-                'started_at' => now(),
-                'expires_at' => now()->addMinutes($programSimulation->scenario->duration_minutes ?? 60),
-                'session_token' => hash('sha256', Str::uuid()->toString()),
-                'device_identifier' => hash('sha256', $request->userAgent().'|'.$request->ip()),
-                'last_ip_address' => $request->ip(),
-                'last_user_agent' => Str::limit((string) $request->userAgent(), 1000, ''),
-            ])->save();
-        }
+            $session ??= new SimulationSession([
+                'assessment_program_simulation_id' => $programSimulation->id,
+                'assessment_participant_id' => $participation->id,
+            ]);
+            if (! $session->started_at) {
+                $session->fill([
+                    'status' => 'in_progress',
+                    'started_at' => now(),
+                    'expires_at' => now()->addMinutes($programSimulation->scenario->duration_minutes ?? 60),
+                    'session_token' => hash('sha256', Str::uuid()->toString()),
+                    'device_identifier' => hash('sha256', $request->userAgent().'|'.$request->ip()),
+                    'last_ip_address' => $request->ip(),
+                    'last_user_agent' => Str::limit((string) $request->userAgent(), 1000, ''),
+                ])->save();
+            }
 
-        return match ($programSimulation->scenario->type->delivery_mode) {
-            'file_upload' => redirect()->route('peserta-assessment.simulations.presentation', $programSimulation),
-            'assessor_observation' => redirect()->route('peserta-assessment.simulations.lgd-review', $programSimulation),
-            'case_response' => $programSimulation->scenario->materialPages->isNotEmpty()
-                ? redirect()->route('peserta-assessment.simulations.material', [$programSimulation, 1])
-                : redirect()->route('peserta-assessment.simulations.case-response', $programSimulation),
-            default => redirect()->route('peserta-assessment.simulations.material', [$programSimulation, 1]),
-        };
+            return match ($programSimulation->scenario->type->delivery_mode) {
+                'file_upload' => redirect()->route('peserta-assessment.simulations.presentation', $programSimulation),
+                'assessor_observation' => redirect()->route('peserta-assessment.simulations.lgd-review', $programSimulation),
+                'case_response' => $programSimulation->scenario->materialPages->isNotEmpty()
+                    ? redirect()->route('peserta-assessment.simulations.material', [$programSimulation, 1])
+                    : redirect()->route('peserta-assessment.simulations.case-response', $programSimulation),
+                default => redirect()->route('peserta-assessment.simulations.material', [$programSimulation, 1]),
+            };
+        });
     }
 
     public function caseResponse(Request $request, AssessmentProgramSimulation $programSimulation): View
@@ -317,6 +334,9 @@ class AssessmentSimulationController extends Controller
     public function materialPdf(Request $request, AssessmentProgramSimulation $programSimulation, SimulationMaterialPage $material)
     {
         [$participation, $programSimulation] = $this->resolveAssignment($request, $programSimulation);
+        if ($programSimulation->scenario->usesSharedSimulationThreeMaterial()) {
+            abort_if($participation->requiresSimulationThreeChoice(), 403, 'Materi tersedia setelah ditetapkan oleh admin.');
+        }
         abort_unless($material->simulation_scenario_id === $programSimulation->simulation_scenario_id, 404);
         abort_unless($material->attachment_path && Storage::disk('local')->exists($material->attachment_path), 404);
 
@@ -406,6 +426,7 @@ class AssessmentSimulationController extends Controller
     {
         $programSimulation->load(['program', 'scenario.type', 'scenario.materialPages']);
         $participation = AssessmentParticipant::where('assessment_program_id', $programSimulation->assessment_program_id)
+            ->when($request->attributes->get('assessment_invitation'), fn ($query, $invitation) => $query->whereKey($invitation->assessment_participant_id))
             ->where('user_id', $request->user()->id)
             ->where('status', 'assigned')
             ->firstOrFail();
@@ -424,6 +445,9 @@ class AssessmentSimulationController extends Controller
 
     private function activeSession(AssessmentProgramSimulation $programSimulation, AssessmentParticipant $participation): SimulationSession
     {
+        if ($programSimulation->scenario->usesSharedSimulationThreeMaterial()) {
+            abort_unless($participation->simulationThreePackageKey() === $programSimulation->scenario->simulation_package, 403);
+        }
         $session = $this->session($programSimulation, $participation);
         abort_unless($session && $session->status === 'in_progress', 403, 'Sesi simulasi tidak aktif.');
         if ($session->expires_at?->isPast()) {

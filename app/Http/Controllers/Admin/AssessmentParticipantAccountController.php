@@ -47,7 +47,7 @@ class AssessmentParticipantAccountController extends Controller
 
     public function store(StoreParticipantAccountRequest $request): RedirectResponse
     {
-        $participant = User::create([...$request->validated(), 'role' => User::ROLE_PESERTA_ASSESSMENT, 'identity_source' => 'manual']);
+        $participant = User::create([...$request->validated(), 'role' => User::ROLE_PESERTA_ASSESSMENT, 'identity_source' => 'manual', 'password' => \Illuminate\Support\Str::random(64)]);
         AuditLogger::record($request, 'participant.created', $participant, ['email' => $participant->email]);
 
         return to_route('admin.participants.index')->with('success', 'Akun peserta berhasil dibuat.');

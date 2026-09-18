@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\AssessmentProgram;
 use App\Models\SimulationScenario;
 use App\Models\SimulationType;
 use Illuminate\Support\Collection;
@@ -9,6 +10,21 @@ use Illuminate\Support\Facades\DB;
 
 class SimulationCatalog
 {
+    public static function forProgram(AssessmentProgram $program, int $userId): Collection
+    {
+        $catalog = self::ensure($userId);
+        $hasStarted = $program->simulations()->whereHas('scenario.type', fn ($query) => $query->where('delivery_mode', 'case_response'))
+            ->whereHas('sessions')->exists();
+
+        if ($hasStarted) {
+            return $catalog->reject(fn ($scenario) => $scenario->type->delivery_mode === 'case_response')
+                ->concat($program->simulations->filter(fn ($simulation) => $simulation->scenario->type->delivery_mode === 'case_response')->pluck('scenario'))
+                ->sortBy(fn ($scenario) => $scenario->type->sequence)->values();
+        }
+
+        return $catalog;
+    }
+
     public static function ensure(int $userId): Collection
     {
         return DB::transaction(function () use ($userId): Collection {
@@ -24,7 +40,7 @@ class SimulationCatalog
                     $scenario = SimulationScenario::query()
                         ->where('simulation_type_id', $type->id)
                         ->where('simulation_package', $package)
-                        ->oldest('id')
+                        ->orderBy('id', array_key_exists((string) $package, SimulationScenario::SIMULATION_THREE_PACKAGES) ? 'desc' : 'asc')
                         ->first();
 
                     if (! $scenario) {

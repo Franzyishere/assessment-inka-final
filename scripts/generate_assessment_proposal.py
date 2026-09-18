@@ -254,7 +254,7 @@ if LOGO.exists():
 
 for text, size, color in [
     ("PROPOSAL & BLUEPRINT SISTEM", 26, "000000"),
-    ("INKA Assessment Management System", 26, RED),
+    ("INKA Assessment Portal", 26, RED),
     ("Platform Pengelolaan Assessment Internal Berbasis Digital", 13, GRAY),
     ("PT INKA (Persero)", 16, "000000"),
     ("Divisi Human Capital", 13, "000000"),
@@ -288,7 +288,7 @@ doc.add_page_break()
 add_heading(doc, "EXECUTIVE SUMMARY", level=1, centered=True)
 add_paragraph(
     doc,
-    "INKA Assessment Management System merupakan aplikasi berbasis web untuk mengelola pelaksanaan assessment internal PT INKA (Persero) secara terpusat. Sistem menghubungkan pengelolaan program, katalog simulasi, peserta, tim asesor, jadwal, pengerjaan, monitoring, penilaian, dan penyampaian hasil dalam satu alur yang memiliki pembatasan akses berdasarkan peran pengguna.",
+    "INKA Assessment Portal merupakan aplikasi berbasis web untuk mengelola pelaksanaan assessment internal PT INKA (Persero) secara terpusat. Sistem menghubungkan pengelolaan program, katalog simulasi, peserta, tim asesor, jadwal, pengerjaan, monitoring, penilaian, dan penyampaian hasil dalam satu alur yang memiliki pembatasan akses berdasarkan peran pengguna.",
 )
 add_paragraph(
     doc,
@@ -312,7 +312,7 @@ add_paragraph(
 )
 add_paragraph(
     doc,
-    "INKA Assessment Management System dirancang untuk menempatkan Program Assessment sebagai wadah pelaksanaan. Satu program dapat memuat peserta dari beberapa kategori pada hari yang sama, menggunakan katalog simulasi yang konsisten, serta menerapkan satu tim asesor ke seluruh rangkaian simulasi program.",
+    "INKA Assessment Portal dirancang untuk menempatkan Program Assessment sebagai wadah pelaksanaan. Satu program dapat memuat peserta dari beberapa kategori pada hari yang sama, menggunakan katalog simulasi yang konsisten, serta menerapkan satu tim asesor ke seluruh rangkaian simulasi program.",
 )
 add_paragraph(doc, "Kebutuhan operasional yang dijawab oleh implementasi aplikasi meliputi:")
 add_bullets(
@@ -513,12 +513,12 @@ add_table(
     doc,
     ["Paket", "Kategori"],
     [
-        ["CI 1", "Kenaikan Golongan I ke II, Promosi Spesialis Pratama, Promosi SPV"],
-        ["CI 2", "Kenaikan Golongan II ke III, Promosi Spesialis Muda"],
-        ["CI 3", "Kenaikan Golongan III ke IV; opsi pertama untuk Promosi Spesialis Madya"],
-        ["In-Tray 1", "Promosi M"],
-        ["In-Tray 2", "Promosi SM"],
-        ["In-Tray 3", "Opsi kedua untuk Promosi Spesialis Madya"],
+        ["CI 1", "Kenaikan Golongan I ke II, Level Spesialis Pratama, Level SPV"],
+        ["CI 2", "Kenaikan Golongan II ke III, Level Spesialis Muda"],
+        ["CI 3", "Kenaikan Golongan III ke IV; opsi pertama untuk Level Spesialis Madya"],
+        ["In-Tray 1", "Level M"],
+        ["In-Tray 2", "Level SM"],
+        ["In-Tray 3", "Opsi kedua untuk Level Spesialis Madya"],
     ],
 )
 add_callout(
@@ -653,7 +653,7 @@ add_table(
 add_heading(doc, "VII. Kesimpulan", level=1)
 add_paragraph(
     doc,
-    "INKA Assessment Management System telah memiliki fondasi operasional assessment yang terhubung dari persiapan program hingga penyampaian hasil final. Implementasi saat ini mencakup empat role, katalog empat simulasi, pengelolaan materi PDF, penugasan tim asesor, session bertimer, rich text response, monitoring, penilaian, serta kontrol akses berbasis role dan kepemilikan data.",
+    "INKA Assessment Portal telah memiliki fondasi operasional assessment yang terhubung dari persiapan program hingga penyampaian hasil final. Implementasi saat ini mencakup empat role, katalog empat simulasi, pengelolaan materi PDF, penugasan tim asesor, session bertimer, rich text response, monitoring, penilaian, serta kontrol akses berbasis role dan kepemilikan data.",
 )
 add_paragraph(
     doc,
@@ -664,7 +664,7 @@ add_paragraph(
     "Integrasi HRIS, SSO INKA, dan undangan email ditempatkan sebagai roadmap terpisah karena source code baru menyediakan sebagian fondasi data dan konfigurasi. Implementasinya memerlukan dokumentasi teknis, credential, serta keputusan proses bisnis resmi dari PT INKA (Persero).",
 )
 
-doc.core_properties.title = "Proposal & Blueprint INKA Assessment Management System"
+doc.core_properties.title = "Proposal & Blueprint INKA Assessment Portal"
 doc.core_properties.subject = "Proposal dan blueprint teknis modul Assessment"
 doc.core_properties.author = "PT INKA (Persero) - Divisi Human Capital"
 doc.core_properties.keywords = "INKA, assessment, proposal, blueprint, Human Capital"

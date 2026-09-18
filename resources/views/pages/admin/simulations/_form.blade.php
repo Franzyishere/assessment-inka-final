@@ -16,13 +16,16 @@
         selectedType: '{{ old('simulation_type_id', $scenario->simulation_type_id ?? $simulationTypes->first()?->id) }}',
         modes: @js($typeModes),
         codes: @js($typeCodes),
+        sharedMaterial: @js($scenario->usesSharedSimulationThreeMaterial()),
         pages: @js($initialPages),
-        get usesPdfMaterials() { return ['multi_page_response', 'case_response'].includes(this.modes[this.selectedType]) },
+        get usesPdfMaterials() { return ['multi_page_response', 'case_response', 'assessor_observation'].includes(this.modes[this.selectedType]) },
         get isProblemAnalysis() { return this.modes[this.selectedType] === 'multi_page_response' },
         get isCriticalIncident() { return this.modes[this.selectedType] === 'case_response' },
-        addPage() { if (!this.isProblemAnalysis || this.pages.length === 0) this.pages.push({ id: null, title: '', content: '', attachment_name: null, is_required: true }) },
+        get isLgd() { return this.modes[this.selectedType] === 'assessor_observation' },
+        get singleMaterial() { return this.isProblemAnalysis || this.isLgd || this.sharedMaterial },
+        addPage() { if (!this.singleMaterial || this.pages.length === 0) this.pages.push({ id: null, title: '', content: '', attachment_name: null, is_required: true }) },
         removePage(index) { this.pages.splice(index, 1) }
-    }" x-init="if (isProblemAnalysis && pages.length === 0) addPage()" x-effect="if (isProblemAnalysis) { if (pages.length === 0) addPage(); if (pages.length > 1) pages = pages.slice(0, 1); }">
+    }" x-init="if (singleMaterial && pages.length === 0) addPage()">
     @csrf
     @if ($editing) @method('PUT') @endif
 
@@ -43,16 +46,17 @@
     </div>
 
     <div x-show="usesPdfMaterials" x-cloak class="rounded-2xl border border-gray-200 bg-white p-5 md:p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-        <div class="mb-5 flex items-center justify-between gap-4"><div><h2 class="font-semibold text-gray-800 dark:text-white/90" x-text="isProblemAnalysis ? 'Materi PDF Simulasi 1' : 'Materi PDF Simulasi 3'"></h2><p class="mt-1 text-sm text-gray-500" x-text="isProblemAnalysis ? 'Unggah satu PDF uraian simulasi.' : 'Tambahkan beberapa PDF; setiap materi memiliki kolom jawaban tersendiri.'"></p></div><button x-show="isCriticalIncident" type="button" @click="addPage" class="crud-btn-soft-brand shrink-0">Tambah Materi</button></div>
+        <div class="mb-5 flex items-center justify-between gap-4"><div><h2 class="font-semibold text-gray-800 dark:text-white/90" x-text="isLgd ? 'Instruksi PDF LGD' : (isProblemAnalysis ? 'Materi PDF Simulasi 1' : 'Materi PDF Simulasi 3')"></h2><p class="mt-1 text-sm text-gray-500" x-text="isLgd ? 'Satu PDF instruksi LGD ditampilkan sebelum peserta meninjau materi dan jawaban Simulasi 1.' : (singleMaterial ? 'Satu PDF uraian simulasi dengan satu kolom jawaban peserta.' : 'Materi paket pelaksanaan lama.')"></p></div><button x-show="isCriticalIncident && !singleMaterial" type="button" @click="addPage" class="crud-btn-soft-brand shrink-0">Tambah Materi</button></div>
         <div class="space-y-4">
             <template x-for="(page, index) in pages" :key="index">
                 <div class="rounded-xl border border-gray-200 p-4 dark:border-gray-800">
-                    <div class="mb-3 flex items-center justify-between gap-3"><h3 class="text-sm font-semibold text-gray-800 dark:text-white/90" x-text="`Materi ${index + 1}`"></h3><button x-show="isCriticalIncident" type="button" @click="removePage(index)" class="crud-btn-soft-danger crud-btn-icon" title="Hapus materi" :aria-label="`Hapus materi ${index + 1}`"><svg class="size-4" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3.75 5.5h12.5M8 3.25h4M5.75 5.5l.6 10a1.5 1.5 0 0 0 1.5 1.4h4.3a1.5 1.5 0 0 0 1.5-1.4l.6-10M8.25 8.5v5.25m3.5-5.25v5.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+                    <div class="mb-3 flex items-center justify-between gap-3"><h3 class="text-sm font-semibold text-gray-800 dark:text-white/90" x-text="isLgd ? 'Instruksi LGD' : `Materi ${index + 1}`"></h3><button x-show="isCriticalIncident && !singleMaterial" type="button" @click="removePage(index)" class="crud-btn-soft-danger crud-btn-icon" title="Hapus materi" :aria-label="`Hapus materi ${index + 1}`"><svg class="size-4" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3.75 5.5h12.5M8 3.25h4M5.75 5.5l.6 10a1.5 1.5 0 0 0 1.5 1.4h4.3a1.5 1.5 0 0 0 1.5-1.4l.6-10M8.25 8.5v5.25m3.5-5.25v5.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
                     <input type="hidden" :name="`material_pages[${index}][id]`" x-model="page.id" :disabled="!usesPdfMaterials">
-                    <input type="hidden" :name="`material_pages[${index}][title]`" :value="`Materi ${index + 1}`" :disabled="!usesPdfMaterials">
+                    <input type="hidden" :name="`material_pages[${index}][title]`" :value="isLgd ? 'Instruksi LGD' : `Materi ${index + 1}`" :disabled="!usesPdfMaterials">
                     <input type="hidden" :name="`material_pages[${index}][is_required]`" :value="page.is_required ? 1 : 0" :disabled="!usesPdfMaterials">
-                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">File PDF *</label>
+                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400" x-text="isLgd ? 'File PDF instruksi *' : 'File PDF *'"></label>
                     <input type="file" accept="application/pdf,.pdf" :name="`material_pages[${index}][attachment]`" :required="usesPdfMaterials && !page.attachment_name" :disabled="!usesPdfMaterials" class="block w-full rounded-lg border border-gray-300 bg-transparent p-3 text-sm text-gray-700 file:mr-4 file:rounded-md file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-brand-600 dark:border-gray-700 dark:text-gray-300">
+                    @error('material_pages.0.attachment')<p class="mt-2 text-sm text-error-500">{{ $message }}</p>@enderror
                     <p x-show="page.attachment_name" class="mt-2 text-xs text-success-600">File saat ini: <span x-text="page.attachment_name"></span></p>
                     <template x-if="isCriticalIncident"><div class="mt-4"><label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Keterangan materi (opsional)</label><textarea :name="`material_pages[${index}][content]`" x-model="page.content" rows="2" placeholder="Keterangan singkat materi" class="dark:bg-dark-900 shadow-theme-xs w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden dark:border-gray-700 dark:text-white/90"></textarea></div></template>
                     <template x-if="!isCriticalIncident"><input type="hidden" :name="`material_pages[${index}][content]`" value="" :disabled="!usesPdfMaterials"></template>

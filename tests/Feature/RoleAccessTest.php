@@ -12,7 +12,6 @@ it('redirects every role from root to its dashboard', function (string $role, st
     [User::ROLE_SUPER_ADMIN, 'super-admin.dashboard'],
     [User::ROLE_ADMIN, 'admin.dashboard'],
     [User::ROLE_ASESOR, 'asesor.dashboard'],
-    [User::ROLE_PESERTA_ASSESSMENT, 'peserta-assessment.dashboard'],
 ]);
 
 it('allows every role to open its own dashboard', function (string $role, string $routeName) {
@@ -23,7 +22,6 @@ it('allows every role to open its own dashboard', function (string $role, string
     [User::ROLE_SUPER_ADMIN, 'super-admin.dashboard'],
     [User::ROLE_ADMIN, 'admin.dashboard'],
     [User::ROLE_ASESOR, 'asesor.dashboard'],
-    [User::ROLE_PESERTA_ASSESSMENT, 'peserta-assessment.dashboard'],
 ]);
 
 test('user cannot open another role dashboard', function () {

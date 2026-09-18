@@ -1,11 +1,11 @@
 @props([
-    'title' => 'INKA Assessment System',
-    'description' => 'Sistem Assessment PT Industri Kereta Api (Persero) untuk pengelolaan program, simulasi, peserta, dan penilaian.',
+    'title' => 'INKA Assessment Portal',
+    'description' => 'INKA Assessment Portal — Assess. Develop. Grow. Platform asesmen online PT INKA untuk mengenali potensi, mengembangkan kompetensi, dan membangun talenta masa depan INKA.',
     'image' => null,
 ])
 
 @php
-    $siteName = 'INKA Assessment System';
+    $siteName = 'INKA Assessment Portal';
     $metaTitle = $title === $siteName ? $siteName : $title.' | '.$siteName;
     $previewPath = 'images/backgrounds/gedung-inka-login.jpg';
     $metaImage = $image ?: asset($previewPath).'?v='.filemtime(public_path($previewPath));
@@ -31,10 +31,10 @@
 <meta property="og:image:width" content="{{ $previewSize[0] }}">
 <meta property="og:image:height" content="{{ $previewSize[1] }}">
 @endif
-<meta property="og:image:alt" content="Gedung PT INKA — halaman masuk INKA Assessment System">
+<meta property="og:image:alt" content="Gedung PT INKA — halaman masuk INKA Assessment Portal">
 
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{{ $metaTitle }}">
 <meta name="twitter:description" content="{{ $description }}">
 <meta name="twitter:image" content="{{ $metaImage }}">
-<meta name="twitter:image:alt" content="Gedung PT INKA — halaman masuk INKA Assessment System">
+<meta name="twitter:image:alt" content="Gedung PT INKA — halaman masuk INKA Assessment Portal">

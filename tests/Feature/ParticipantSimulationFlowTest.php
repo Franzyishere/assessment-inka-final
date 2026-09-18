@@ -1,5 +1,9 @@
 <?php
 
+// Exercise assessment business rules independently; real invitation/OTP gating is
+// covered without middleware bypass in AssessmentInvitationAccessTest.
+beforeEach(fn () => $this->withoutMiddleware(\App\Http\Middleware\EnsureAssessmentInvitation::class));
+
 use App\Models\AssessmentParticipant;
 use App\Models\AssessmentProgram;
 use App\Models\AssessmentProgramSimulation;
@@ -148,4 +152,47 @@ test('participant simulation list hides programs and simulations after their exe
         ->assertOk()
         ->assertDontSee('Problem Analysis Flow')
         ->assertSee('Tidak ada simulasi aktif');
+});
+
+test('participant simulations are ordered strictly by simulation type sequence 1, 2, 3, 4', function () {
+    $admin = User::where('role', User::ROLE_ADMIN)->firstOrFail();
+    $participant = User::where('role', User::ROLE_PESERTA_ASSESSMENT)->firstOrFail();
+
+    $program = AssessmentProgram::create([
+        'code' => 'FLOW-ORDER',
+        'name' => 'Order Test',
+        'status' => 'active',
+        'created_by' => $admin->id,
+    ]);
+
+    $type1 = SimulationType::where('code', SimulationType::PROBLEM_ANALYSIS)->firstOrFail();
+    $type2 = SimulationType::where('code', SimulationType::LGD)->firstOrFail();
+    $type3 = SimulationType::where('code', SimulationType::CRITICAL_INCIDENT)->firstOrFail();
+    $type4 = SimulationType::where('code', SimulationType::PRESENTATION)->firstOrFail();
+
+    $scenario1 = SimulationScenario::create(['simulation_type_id' => $type1->id, 'code' => 'O-1', 'title' => 'Sim 1', 'status' => 'published', 'created_by' => $admin->id]);
+    $scenario2 = SimulationScenario::create(['simulation_type_id' => $type2->id, 'code' => 'O-2', 'title' => 'Sim 2', 'status' => 'published', 'created_by' => $admin->id]);
+    $scenario4 = SimulationScenario::create(['simulation_type_id' => $type4->id, 'code' => 'O-4', 'title' => 'Sim 4', 'status' => 'published', 'created_by' => $admin->id]);
+    $scenario3 = SimulationScenario::create(['simulation_type_id' => $type3->id, 'code' => 'O-3', 'title' => 'Sim 3', 'simulation_package' => 'ci_1', 'status' => 'published', 'created_by' => $admin->id]);
+
+    AssessmentProgramSimulation::create(['assessment_program_id' => $program->id, 'simulation_scenario_id' => $scenario1->id, 'status' => 'scheduled']);
+    AssessmentProgramSimulation::create(['assessment_program_id' => $program->id, 'simulation_scenario_id' => $scenario2->id, 'status' => 'scheduled']);
+    AssessmentProgramSimulation::create(['assessment_program_id' => $program->id, 'simulation_scenario_id' => $scenario4->id, 'status' => 'scheduled']);
+    AssessmentProgramSimulation::create(['assessment_program_id' => $program->id, 'simulation_scenario_id' => $scenario3->id, 'status' => 'scheduled']);
+
+    AssessmentParticipant::create([
+        'assessment_program_id' => $program->id,
+        'user_id' => $participant->id,
+        'assessment_category' => 'grade_1_to_2',
+        'status' => 'assigned',
+        'assigned_at' => now(),
+    ]);
+
+    $response = $this->actingAs($participant)->get(route('peserta-assessment.simulations.index'))->assertOk();
+
+    $participations = $response->viewData('participations');
+    $orderTestParticipation = $participations->firstWhere('assessment_program_id', $program->id);
+    $sequences = $orderTestParticipation->program->simulations->pluck('scenario.type.sequence')->all();
+
+    expect($sequences)->toBe([1, 2, 3, 4]);
 });

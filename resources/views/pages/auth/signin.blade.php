@@ -15,7 +15,7 @@
     <div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-black/30"></div>
 
     <section class="relative z-10 grid w-full max-w-5xl overflow-hidden rounded-3xl border border-white/30 bg-white/5 shadow-[0_24px_80px_rgba(0,0,0,.3)] backdrop-blur-none lg:min-h-[570px] lg:grid-cols-[1fr_.9fr]">
-        <div class="relative hidden flex-col justify-center overflow-hidden border-r border-white/15 p-10 text-white lg:flex xl:p-12">
+        <div class="relative hidden flex-col justify-center overflow-hidden border-r border-white/15 p-10 text-white backdrop-blur-[1px] lg:flex xl:p-12">
             <!-- <div class="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand-950/20 to-transparent"></div> -->
             <div class="relative">
                 <div class="flex h-20 w-64 items-center overflow-hidden rounded-2xl bg-white/100 px-5 shadow-xl">
@@ -25,8 +25,9 @@
                     </video>
                 </div>
                 <div class="mt-10 max-w-lg">
-                    <h1 class="mt-5 text-4xl font-bold leading-tight">Assessment System INKA</h1>
-                    <p class="mt-5 max-w-md text-sm leading-7 text-white/75 xl:text-base">Akses layanan Assessment PT Industri Kereta Api (Persero) secara aman sesuai peran dan penugasan Anda.</p>
+                    <h1 class="text-4xl font-bold leading-tight">INKA Assessment Portal</h1>
+                    <p class="mt-4 text-lg font-semibold text-white">Assess. Develop. Grow.</p>
+                    <p class="mt-4 max-w-md text-sm leading-7 text-white/90 xl:text-base">Platform asesmen online PT INKA untuk mengenali potensi, mengembangkan kompetensi, dan membangun talenta masa depan INKA.</p>
                 </div>
             </div>
         </div>
@@ -42,9 +43,15 @@
                     </div>
                 </div>
 
+                <div class="mb-7 text-center lg:hidden">
+                    <p class="text-lg font-bold text-gray-900">INKA Assessment Portal</p>
+                    <p class="mt-1 text-sm font-semibold text-brand-700">Assess. Develop. Grow.</p>
+                    <p class="mt-2 text-xs leading-5 text-gray-600">Platform asesmen online PT INKA untuk mengenali potensi, mengembangkan kompetensi, dan membangun talenta masa depan INKA.</p>
+                </div>
+
                 <span class="inline-flex rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700">Selamat datang kembali</span>
                 <h2 class="mt-4 text-3xl font-bold tracking-tight text-gray-900">Masuk ke akun Anda</h2>
-                <p class="mt-2 text-sm leading-6 text-gray-500">Gunakan akun yang telah terdaftar untuk melanjutkan.</p>
+                <p class="mt-2 text-sm leading-6 text-gray-500">Admin dan asesor menggunakan email dan password. Peserta masuk melalui tautan undangan di email, lalu meminta OTP.</p>
 
                 <form method="POST" action="{{ route('login.store') }}" class="mt-8">
                     @csrf

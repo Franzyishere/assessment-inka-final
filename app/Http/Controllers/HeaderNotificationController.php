@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\SimulationSession;
-use App\Models\SimulationReview;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -21,10 +20,6 @@ class HeaderNotificationController extends Controller
                 ->whereHas('programSimulation.assessorAssignments', fn ($q) => $q->where('assessor_id', $user->id))
                 ->whereDoesntHave('reviews', fn ($q) => $q->where('assessor_id', $user->id)->where('status', 'submitted'))->count();
             if ($count) $items[] = ['title' => "$count submission menunggu penilaian Anda", 'url' => route('asesor.reviews.index')];
-        } elseif ($user->role === 'peserta_assessment') {
-            $count = SimulationReview::where('status', 'submitted')
-                ->whereHas('session.participant', fn ($q) => $q->where('user_id', $user->id))->count();
-            if ($count) $items[] = ['title' => "$count hasil penilaian tersedia", 'url' => route('peserta-assessment.results.index')];
         }
         return response()->json(['items' => $items])->header('Cache-Control', 'no-store');
     }

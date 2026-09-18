@@ -16,6 +16,8 @@ class AssessmentProgramController extends Controller
 {
     public function index(Request $request): View
     {
+        AssessmentProgram::activateDuePrograms();
+
         return view('pages.admin.assessment-programs.index', [
             'title' => 'Program Assessment',
             'programs' => AssessmentProgram::query()

@@ -5,6 +5,11 @@ use App\Models\User;
 test('login page is available to guests', function () {
     $this->get(route('login'))
         ->assertOk()
+        ->assertSee('<title>Masuk | INKA Assessment Portal</title>', false)
+        ->assertSee('property="og:site_name" content="INKA Assessment Portal"', false)
+        ->assertSee('property="og:title" content="Masuk | INKA Assessment Portal"', false)
+        ->assertSee('Assess. Develop. Grow.')
+        ->assertSee('Platform asesmen online PT INKA untuk mengenali potensi, mengembangkan kompetensi, dan membangun talenta masa depan INKA.')
         ->assertSee('property="og:title"', false)
         ->assertSee('property="og:description"', false)
         ->assertSee('property="og:image"', false)

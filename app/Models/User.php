@@ -62,7 +62,7 @@ class User extends Authenticatable
             self::ROLE_SUPER_ADMIN => 'super-admin.dashboard',
             self::ROLE_ADMIN => 'admin.dashboard',
             self::ROLE_ASESOR => 'asesor.dashboard',
-            self::ROLE_PESERTA_ASSESSMENT => 'peserta-assessment.dashboard',
+            self::ROLE_PESERTA_ASSESSMENT => 'peserta-assessment.simulations.index',
             default => abort(403, 'Role pengguna tidak dikenali.'),
         };
     }
