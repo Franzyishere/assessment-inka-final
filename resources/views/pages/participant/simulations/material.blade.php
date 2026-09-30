@@ -1,10 +1,13 @@
 @extends('layouts.fullscreen-layout')
 
 @section('content')
-<main class="min-h-screen bg-gray-50 p-3 sm:p-5 lg:p-6">
-<div x-data="antiCheatSession('{{ $session->expires_at?->toIso8601String() }}', '{{ route('peserta-assessment.simulations.events.store', $programSimulation) }}', {{ $pageNumber }}, {{ $pageCount }})" class="mx-auto min-w-0 max-w-7xl space-y-5">
-    <div x-show="!secureMode" x-cloak class="fixed inset-0 z-99998 flex items-center justify-center bg-gray-900/90 p-4 backdrop-blur-md"><div class="w-full max-w-md rounded-2xl bg-white p-6 text-center shadow-xl"><h2 class="text-lg font-semibold text-gray-800" x-text="violations ? 'Halaman Pengerjaan Dikunci' : 'Aktifkan Mode Fullscreen'"></h2><p class="mt-2 text-sm leading-6 text-gray-500" x-text="securityMessage"></p><div x-show="violations > 0" class="mt-4 rounded-xl px-4 py-3 text-sm font-medium" :class="violations >= 3 ? 'bg-error-50 text-error-700' : 'bg-warning-50 text-warning-700'"><span x-text="violations"></span> aktivitas tercatat<span x-show="violations >= 3"> · perlu ditinjau asesor</span></div><p x-show="fullscreenError" x-text="fullscreenError" class="mt-3 text-sm text-error-500"></p><button type="button" @click="enableFullscreen" class="mt-6 w-full rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600">Kembali ke Fullscreen & Lanjutkan</button></div></div>
-    <div class="sticky top-3 z-30 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-theme-sm dark:border-gray-800 dark:bg-gray-900">
+<main class="assessment-workspace min-h-screen bg-gray-50 p-2 sm:p-3">
+<div x-data="antiCheatSession('{{ $session->expires_at?->toIso8601String() }}', '{{ route('peserta-assessment.simulations.events.store', $programSimulation) }}', {{ $pageNumber }}, {{ $pageCount }})" class="mx-auto min-w-0 w-full space-y-5">
+    <template x-teleport="body">
+    <div x-show="!secureMode" x-effect="if (!secureMode) $nextTick(() => $el.querySelector('button').focus({ preventScroll: true }))" @keydown.tab.prevent="$el.querySelector('button').focus()" x-cloak role="dialog" aria-modal="true" aria-label="Halaman pengerjaan dikunci" class="assessment-lock fixed inset-0 z-99998 flex items-center justify-center bg-gray-900/90 p-4 backdrop-blur-md"><div class="w-full max-w-md rounded-2xl bg-white p-6 text-center shadow-xl"><h2 class="text-lg font-semibold text-gray-800" x-text="violations ? 'Halaman Pengerjaan Dikunci' : 'Aktifkan Mode Fullscreen'"></h2><p class="mt-2 text-sm leading-6 text-gray-500" x-text="securityMessage"></p><div x-show="violations > 0" class="mt-4 rounded-xl px-4 py-3 text-sm font-medium" :class="violations >= 3 ? 'bg-error-50 text-error-700' : 'bg-warning-50 text-warning-700'"><span x-text="violations"></span> aktivitas tercatat<span x-show="violations >= 3"> · perlu ditinjau asesor</span></div><p x-show="fullscreenError" x-text="fullscreenError" class="mt-3 text-sm text-error-500"></p><button type="button" @click="enableFullscreen" class="mt-6 w-full rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600">Kembali ke Fullscreen & Lanjutkan</button></div></div>
+    </template>
+    <div :inert="!secureMode" :aria-hidden="!secureMode" class="space-y-3">
+    <div data-assessment-session-header class="sticky top-3 z-30 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-theme-sm dark:border-gray-800 dark:bg-gray-900">
         <div class="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             <div class="min-w-0">
                 <div class="flex items-center gap-2"><p class="text-xs font-medium uppercase text-brand-500">Halaman <span x-text="currentPage"></span> dari {{ $pageCount }}</p><span class="h-1 w-1 rounded-full bg-gray-300"></span><p class="text-xs text-gray-500">{{ $programSimulation->scenario->duration_minutes }} menit</p></div>
@@ -26,20 +29,26 @@
     </div>
     @foreach($materials as $index => $pageMaterial)
         @php($currentNumber = $index + 1)
-        <section x-show="currentPage === {{ $currentNumber }}" x-cloak class="space-y-5">
-            <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-                <div class="flex items-center justify-between gap-4 border-b border-gray-200 px-5 py-4 dark:border-gray-800"><div><span class="text-xs font-medium text-brand-500">Materi {{ $currentNumber }}</span><h2 class="mt-1 font-semibold text-gray-800 dark:text-white/90">Uraian Simulasi</h2></div><span class="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 dark:bg-white/5 dark:text-gray-300"><svg class="size-3.5" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M6.5 9V6.75a3.5 3.5 0 0 1 7 0V9M5.75 9h8.5v7h-8.5V9Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Hanya baca</span></div>
-                <div class="bg-gray-50/70 p-4 sm:p-5 lg:p-6 dark:bg-gray-900/30">
-                    <div class="mx-auto max-w-5xl overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xs dark:border-gray-700">
-                        <iframe title="Materi PDF {{ $currentNumber }} — hanya baca" src="{{ route('peserta-assessment.simulations.material.pdf', [$programSimulation, $pageMaterial]) }}#toolbar=0&navpanes=0&scrollbar=1&view=FitH" class="h-[52vh] min-h-[460px] max-h-[580px] w-full select-none bg-gray-100" referrerpolicy="same-origin"></iframe>
+        <section x-show="currentPage === {{ $currentNumber }}" x-cloak x-data="{ answerMinimized: false, materialMinimized: false }">
+            <div class="mb-3 flex flex-wrap justify-end gap-2" role="group" aria-label="Tampilan area pengerjaan">
+                <button type="button" @click="materialMinimized = !materialMinimized; if (materialMinimized) answerMinimized = false" :aria-expanded="!materialMinimized" aria-controls="assessment-material-{{ $currentNumber }}" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800" x-text="materialMinimized ? 'Tampilkan materi' : 'Minimalkan materi'"></button>
+                <button type="button" @click="answerMinimized = !answerMinimized; if (answerMinimized) materialMinimized = false" aria-controls="assessment-answer-{{ $currentNumber }}" :aria-expanded="!answerMinimized" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800" x-text="answerMinimized ? 'Tampilkan jawaban' : 'Minimalkan jawaban'"></button>
+            </div>
+            <div class="grid min-w-0 items-start gap-3" :class="answerMinimized || materialMinimized ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'">
+            <div id="assessment-material-{{ $currentNumber }}" x-show="!materialMinimized" class="min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+                <div class="flex items-center justify-between gap-4 border-b border-gray-200 px-3 py-2 dark:border-gray-800"><div><span class="text-xs font-medium text-brand-500">Materi {{ $currentNumber }}</span><h2 class="font-semibold text-sm text-gray-800 dark:text-white/90">Uraian Simulasi</h2></div><span class="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 dark:bg-white/5 dark:text-gray-300"><svg class="size-3.5" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M6.5 9V6.75a3.5 3.5 0 0 1 7 0V9M5.75 9h8.5v7h-8.5V9Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Hanya baca</span></div>
+                <div class="bg-gray-50/70 p-1 dark:bg-gray-900/30">
+                    <div class="w-full">
+                        <x-common.secure-pdf-viewer height="h-[calc(100dvh-190px)] min-h-[360px]" :url="route('peserta-assessment.simulations.material.pdf', [$programSimulation, $pageMaterial])" :highlights-url="route('peserta-assessment.simulations.material.highlights', [$programSimulation, $pageMaterial])" :highlights-key="$session->id.'-'.$pageMaterial->id" />
                     </div>
                 </div>
                 @if($pageMaterial->content)<div class="border-t border-gray-200 px-5 py-4 text-sm text-gray-500 dark:border-gray-800">{{ $pageMaterial->content }}</div>@endif
             </div>
-            <form method="POST" action="{{ route('peserta-assessment.simulations.material.save', [$programSimulation, $currentNumber]) }}" @if($currentNumber < $pageCount) @submit.prevent="saveAndContinue($event, {{ $currentNumber + 1 }})" @endif class="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+            <form id="assessment-answer-{{ $currentNumber }}" x-show="!answerMinimized" method="POST" action="{{ route('peserta-assessment.simulations.material.save', [$programSimulation, $currentNumber]) }}" @if($currentNumber < $pageCount) @submit.prevent="saveAndContinue($event, {{ $currentNumber + 1 }})" @endif class="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
                 @csrf @method('PUT')
                 <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Jawaban Materi {{ $currentNumber }} @if($pageMaterial->is_required)<span class="text-error-500">*</span>@endif</label>
-                <x-forms.rich-text-editor name="response" :value="old('response', $responses[$currentNumber] ?? '')" :required="$pageMaterial->is_required" />
+                <x-forms.rich-text-editor name="response" :draft-key="'assessment-answer-'.$session->id.'-'.$pageMaterial->id" :value="$pageNumber === $currentNumber ? old('response', $responses[$currentNumber] ?? '') : ($responses[$currentNumber] ?? '')" :required="$pageMaterial->is_required" :document="true" :legacy-diagram="$pageNumber === $currentNumber ? old('diagram', $diagrams[$currentNumber] ?? []) : ($diagrams[$currentNumber] ?? [])" />
+                @if($pageNumber === $currentNumber) @error('diagram')<p class="mt-1 text-xs text-error-500">{{ $message }}</p>@enderror @endif
                 @if($pageNumber === $currentNumber) @error('response')<p class="mt-1 text-xs text-error-500">{{ $message }}</p>@enderror @endif
                 <div class="mt-5 flex items-center {{ $pageCount > 1 ? 'justify-between' : 'justify-end' }}">
                     @if($pageCount > 1)
@@ -48,8 +57,10 @@
                     <button type="submit" @if($currentNumber === $pageCount) name="submit_after_save" value="1" @click.prevent="$dispatch('confirm-dialog', { title: 'Simpan dan kumpulkan?', message: 'Jawaban materi terakhir akan disimpan bersama seluruh jawaban, lalu tidak dapat diubah kembali.', confirmLabel: 'Ya, Kumpulkan', onConfirm: () => $el.form.requestSubmit($el) })" @endif :disabled="saving" class="rounded-lg px-5 py-2.5 text-sm font-medium text-white disabled:cursor-wait disabled:opacity-60 {{ $currentNumber === $pageCount ? 'bg-success-500 hover:bg-success-600' : 'bg-brand-500 hover:bg-brand-600' }}"><span x-text="saving && currentPage === {{ $currentNumber }} ? 'Menyimpan...' : '{{ $currentNumber === $pageCount ? 'Simpan & Kumpulkan' : 'Simpan & Berikutnya' }}'"></span></button>
                 </div>
             </form>
+            </div>
         </section>
     @endforeach
+</div>
 </div>
 </main>
 @endsection
@@ -130,11 +141,12 @@
                     const data = await response.json();
 
                     if (!response.ok) {
-                        const message = data.errors?.response?.[0] || data.message || 'Jawaban belum dapat disimpan.';
+                        const message = data.errors?.diagram?.[0] || data.errors?.response?.[0] || data.message || 'Jawaban belum dapat disimpan.';
                         window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', title: 'Jawaban belum tersimpan', message } }));
                         return;
                     }
 
+                    form.dispatchEvent(new CustomEvent('answer-saved'));
                     this.goToPage(data.next_page || nextPage, data.next_url);
                     window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', title: 'Jawaban tersimpan', message: 'Materi berikutnya siap dikerjakan.' } }));
                 } catch (_) {

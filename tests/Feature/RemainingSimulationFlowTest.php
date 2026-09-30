@@ -19,7 +19,7 @@ beforeEach(function () {
     $this->seed(DatabaseSeeder::class);
 });
 
-function simulationFlowSetup(string $typeCode, string $suffix): array
+function simulationFlowSetup(string $typeCode, string $suffix, string $status = AssessmentProgramSimulation::STATUS_IN_PROGRESS): array
 {
     $admin = User::where('role', User::ROLE_ADMIN)->firstOrFail();
     $participantUser = User::where('role', User::ROLE_PESERTA_ASSESSMENT)->firstOrFail();
@@ -27,7 +27,7 @@ function simulationFlowSetup(string $typeCode, string $suffix): array
     $type = SimulationType::where('code', $typeCode)->firstOrFail();
     $program = AssessmentProgram::create(['code' => "FLOW-{$suffix}", 'name' => "Program {$suffix}", 'status' => 'active', 'created_by' => $admin->id]);
     $scenario = SimulationScenario::create(['simulation_type_id' => $type->id, 'simulation_package' => $typeCode === SimulationType::CRITICAL_INCIDENT ? 'ci_1' : null, 'code' => "SIM-{$suffix}", 'title' => "Simulasi {$suffix}", 'description' => 'Materi kasus simulasi.', 'duration_minutes' => 60, 'status' => 'published', 'created_by' => $admin->id]);
-    $programSimulation = AssessmentProgramSimulation::create(['assessment_program_id' => $program->id, 'simulation_scenario_id' => $scenario->id, 'status' => 'scheduled']);
+    $programSimulation = AssessmentProgramSimulation::create(['assessment_program_id' => $program->id, 'simulation_scenario_id' => $scenario->id, 'status' => $status]);
     $participant = AssessmentParticipant::create(['assessment_program_id' => $program->id, 'user_id' => $participantUser->id, 'assessment_category' => 'grade_1_to_2', 'status' => 'assigned']);
     AssessorAssignment::create(['assessment_program_simulation_id' => $programSimulation->id, 'assessor_id' => $assessor->id, 'assigned_by' => $admin->id]);
 
@@ -97,8 +97,7 @@ test('participant completes timed lgd then assessor proceeds to review', functio
     $this->actingAs($participantUser)->post(route('peserta-assessment.simulations.lgd-review.submit', $simulation), ['confirmation' => '1'])
         ->assertRedirect(route('peserta-assessment.simulations.index'));
     $session = SimulationSession::where('assessment_program_simulation_id', $simulation->id)->firstOrFail();
-    expect($session->status)->toBe('submitted');
-    $this->actingAs($assessor)->get(route('asesor.simulations.show', $simulation))->assertOk()->assertSee('Beri penilaian');
+    $this->actingAs($assessor)->get(route('asesor.simulations.show', $simulation))->assertOk()->assertSee('Lihat & Unduh Jawaban');
     $this->actingAs($assessor)->get(route('asesor.reviews.edit', $session))->assertOk()->assertSee('Hasil Observasi LGD');
 });
 

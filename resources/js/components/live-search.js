@@ -21,6 +21,7 @@ async function replacePageContent(url, { pushState = true, focusSearch = true } 
         currentContent.innerHTML = nextContent.innerHTML;
         window.Alpine?.initTree(currentContent);
         initializeLiveSearch(currentContent);
+        document.dispatchEvent(new CustomEvent('page-content-updated'));
         if (pushState) window.history.replaceState({}, '', url);
 
         if (focusSearch) {

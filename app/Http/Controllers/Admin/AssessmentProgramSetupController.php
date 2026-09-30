@@ -136,13 +136,30 @@ class AssessmentProgramSetupController extends Controller
                 throw ValidationException::withMessages(['assessor_ids' => 'Asesor yang sudah memiliki penilaian tidak dapat dilepas dari tim program.']);
             }
 
-            DB::transaction(function () use ($request, $assessmentProgram, $scenarioIds, $participantIds, $assessorIds, $data, $upgradingMaterials, $simulationThreePackages): void {
+            $autoSend = $request->boolean('auto_send_invitations', true);
+            $assessmentProgram->update(['auto_send_invitations' => $autoSend]);
+
+            DB::transaction(function () use ($request, $assessmentProgram, $catalog, $scenarioIds, $participantIds, $assessorIds, $data, $upgradingMaterials, $simulationThreePackages): void {
                 $assessmentProgram->simulations()->whereNotIn('simulation_scenario_id', $scenarioIds)->delete();
 
                 foreach ($scenarioIds as $scenarioId) {
+                    $scenario = $catalog->firstWhere('id', $scenarioId);
+                    $seq = (int) ($scenario?->type?->sequence ?? 1);
+                    $isPresentation = $seq === 4 || $scenario?->type?->delivery_mode === 'file_upload';
+
+                    $existing = $assessmentProgram->simulations()->where('simulation_scenario_id', $scenarioId)->first();
+                    $status = $existing?->status;
+                    if (! $status || $status === AssessmentProgramSimulation::STATUS_DRAFT) {
+                        $status = $isPresentation ? AssessmentProgramSimulation::STATUS_IN_PROGRESS : AssessmentProgramSimulation::STATUS_SCHEDULED;
+                    }
+
                     $programSimulation = AssessmentProgramSimulation::updateOrCreate(
                         ['assessment_program_id' => $assessmentProgram->id, 'simulation_scenario_id' => $scenarioId],
-                        ['opens_at' => $assessmentProgram->starts_at, 'closes_at' => $assessmentProgram->ends_at, 'status' => 'scheduled']
+                        [
+                            'opens_at' => $assessmentProgram->starts_at,
+                            'closes_at' => $assessmentProgram->ends_at,
+                            'status' => $status,
+                        ]
                     );
 
                     $programSimulation->assessorAssignments()->whereNotIn('assessor_id', $assessorIds)->delete();
@@ -184,7 +201,32 @@ class AssessmentProgramSetupController extends Controller
                 }
             });
 
-            return to_route('admin.assessment-programs.index')->with('success', 'Susunan program dan penugasan berhasil disimpan.');
+            $sentCount = 0;
+            if ($autoSend && $assessmentProgram->starts_at && now()->gte($assessmentProgram->starts_at->copy()->subMinutes(10))) {
+                $service = app(\App\Services\AssessmentInvitationService::class);
+                $uninvited = $assessmentProgram->participants()
+                    ->where('status', 'assigned')
+                    ->get();
+
+                foreach ($uninvited as $participant) {
+                    try {
+                        if ($service->issue($participant, $request->user()->id, automatic: true)) {
+                            $sentCount++;
+                        }
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning('Automatic invitation could not be queued.', ['participant_id' => $participant->id, 'error_type' => $e::class]);
+                    }
+                }
+            }
+
+            $message = 'Susunan program dan penugasan berhasil disimpan.';
+            if ($sentCount > 0) {
+                $message .= " {$sentCount} undangan masuk antrean pengiriman. Periksa status pada menu Undangan Assessment.";
+            } elseif ($autoSend && $assessmentProgram->starts_at && now()->lt($assessmentProgram->starts_at->copy()->subMinutes(10))) {
+                $message .= ' Undangan akan otomatis dikirim 10 menit sebelum program aktif.';
+            }
+
+            return to_route($assessmentProgram->archived_at ? 'admin.result-archives.index' : 'admin.assessment-programs.index')->with('success', $message);
         });
     }
 }

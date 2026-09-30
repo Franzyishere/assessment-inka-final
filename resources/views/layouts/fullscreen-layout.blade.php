@@ -13,6 +13,34 @@
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        @media print {
+            body { display: none !important; }
+            html { display: none !important; }
+        }
+    </style>
+    <script>
+        // Global anti-theft guards for fullscreen assessment sessions
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        document.addEventListener('keydown', function(e) {
+            var isCtrlOrMeta = e.ctrlKey || e.metaKey;
+            var key = (e.key || '').toLowerCase();
+            if (isCtrlOrMeta && (key === 's' || key === 'p' || key === 'u')) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+            if (e.key === 'F12' || (isCtrlOrMeta && e.shiftKey && (key === 'i' || key === 'j' || key === 'c'))) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        });
+    </script>
     @stack('styles')
 
     <!-- Alpine.js -->

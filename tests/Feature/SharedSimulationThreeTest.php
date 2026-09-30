@@ -62,7 +62,8 @@ test('admin can select one of three materials for every assessment level', funct
             && $items->first()->program->simulations->contains('id', $chosen->id)
             && ! $items->first()->program->simulations->contains('id', $other->id));
     $this->get(route('peserta-assessment.simulations.material.pdf', [$other, $other->scenario->materialPages->first()]))->assertNotFound();
-    $this->post(route('peserta-assessment.simulations.start', $chosen))->assertRedirect(route('peserta-assessment.simulations.material', [$chosen, 1]));
+    $this->actingAs($admin)->post(route('admin.monitoring.simulations.start', [$program, 3]))->assertRedirect();
+    $this->actingAs($user)->post(route('peserta-assessment.simulations.start', $chosen))->assertRedirect(route('peserta-assessment.simulations.material', [$chosen, 1]));
     $this->get(route('peserta-assessment.simulations.material', [$chosen, 1]))->assertOk()->assertSee('Simpan & Kumpulkan');
     $this->put(route('peserta-assessment.simulations.material.save', [$chosen, 1]), ['response' => '<p>Jawaban final.</p>', 'submit_after_save' => 1])
         ->assertSessionHasNoErrors()->assertRedirect(route('peserta-assessment.simulations.index'));
@@ -111,6 +112,7 @@ test('choice locks on start and a resumed session retains its deadline', functio
         'participant_simulation_three_choices' => [$user->id => 'ci_long'], 'assessor_ids' => [$assessor->id],
     ])->assertSessionHasNoErrors();
     $chosen = $program->simulations()->with('scenario')->get()->first(fn ($simulation) => $simulation->scenario->simulation_package === 'ci_long');
+    $this->actingAs($admin)->post(route('admin.monitoring.simulations.start', [$program, 3]))->assertRedirect();
     $this->actingAs($user)->post(route('peserta-assessment.simulations.start', $chosen));
     $session = SimulationSession::firstOrFail();
     $deadline = $session->expires_at->toIso8601String();

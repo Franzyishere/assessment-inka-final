@@ -32,28 +32,35 @@ function submittedSessionForReview(): array
     return compact('assessor', 'session');
 }
 
-test('assigned assessor saves draft and finalizes review', function () {
+test('assigned assessor views submitted results but cannot save reviews', function () {
     ['assessor' => $assessor, 'session' => $session] = submittedSessionForReview();
-
     $program = $session->programSimulation->program;
     $this->actingAs($assessor)->get(route('asesor.reviews.index'))
-        ->assertOk()->assertSee('Review Test')->assertSee('Lihat Peserta');
-    $this->actingAs($assessor)->get(route('asesor.reviews.program', $program))
-        ->assertOk()->assertSee($session->participant->user->name)->assertSee('Simulasi 1 - Problem Analysis');
-    $this->actingAs($assessor)->put(route('asesor.reviews.update', $session), [
-        'status' => 'draft', 'assessment_notes' => 'Catatan sementara',
-    ])->assertRedirect(route('asesor.reviews.program', $program));
-    expect($session->reviews()->firstOrFail()->status)->toBe('draft');
+        ->assertOk()->assertSee('Hasil Assessment')->assertSee('Review Test');
+    $this->get(route('asesor.reviews.program', $program))->assertOk()
+        ->assertSee('Lihat &amp; Unduh Jawaban', false)->assertSee('format=pdf', false);
+    $this->get(route('asesor.reviews.edit', $session))->assertOk()
+        ->assertSee('Lembar Jawaban Peserta')->assertSee('Unduh PDF')
+        ->assertDontSee('Simpan Draft')->assertDontSee('Finalisasi')->assertDontSee('name="recommendation"', false);
+    $this->put(route('asesor.reviews.update', $session), ['status' => 'draft'])->assertForbidden();
+    expect($session->reviews()->count())->toBe(0);
 
-    $this->actingAs($assessor)->put(route('asesor.reviews.update', $session), [
-        'status' => 'submitted', 'recommendation' => 'recommended_with_development', 'assessment_notes' => 'Perlu pengembangan komunikasi.',
-    ])->assertRedirect(route('asesor.reviews.program', $program));
-    expect($session->reviews()->firstOrFail()->status)->toBe('submitted')
-        ->and($session->reviews()->firstOrFail()->reviewed_at)->not->toBeNull();
-
-    $this->actingAs($assessor)->put(route('asesor.reviews.update', $session), [
-        'status' => 'submitted', 'recommendation' => 'not_recommended',
+    $review = $session->reviews()->create([
+        'assessor_id' => $assessor->id, 'status' => 'draft', 'assessment_notes' => 'Catatan lama',
+    ]);
+    $before = $review->fresh()->getAttributes();
+    $this->put(route('asesor.reviews.update', $session), [
+        'status' => 'submitted', 'recommendation' => 'recommended', 'assessment_notes' => 'Diubah',
     ])->assertForbidden();
+    expect($review->fresh()->getAttributes())->toBe($before);
+});
+
+test('unfinished sessions are excluded and cannot be viewed or downloaded', function () {
+    ['assessor' => $assessor, 'session' => $session] = submittedSessionForReview();
+    $session->update(['status' => 'in_progress']);
+    $this->actingAs($assessor)->get(route('asesor.reviews.index'))->assertOk()->assertDontSee('Review Test');
+    $this->get(route('asesor.reviews.edit', $session))->assertForbidden();
+    $this->get(route('asesor.reviews.download', $session))->assertForbidden();
 });
 
 test('unassigned assessor cannot view or review participant submission', function () {
@@ -63,4 +70,38 @@ test('unassigned assessor cannot view or review participant submission', functio
     $this->actingAs($other)->get(route('asesor.reviews.edit', $session))->assertForbidden();
     $this->actingAs($other)->get(route('asesor.reviews.program', $session->programSimulation->program))->assertForbidden();
     $this->actingAs($other)->put(route('asesor.reviews.update', $session), ['status' => 'draft'])->assertForbidden();
+});
+
+test('assigned assessor can download participant answer as pdf and word', function () {
+    ['assessor' => $assessor, 'session' => $session] = submittedSessionForReview();
+
+    $responsePdf = $this->actingAs($assessor)->get(route('asesor.reviews.download', [$session, 'format' => 'pdf']));
+    $responsePdf->assertOk()
+        ->assertHeader('content-type', 'application/pdf');
+    $pdfBytes = $responsePdf->getContent();
+    expect($pdfBytes)->toStartWith('%PDF-');
+    preg_match_all('/stream\r?\n(.*?)\r?\nendstream/s', $pdfBytes, $streams);
+    $decodedStreams = implode('', array_map(fn ($stream) => @gzuncompress($stream) ?: $stream, $streams[1]));
+    expect(str_contains($decodedStreams, mb_convert_encoding('Jawaban peserta', 'UTF-16BE', 'UTF-8')))->toBeTrue();
+
+    $responseWord = $this->actingAs($assessor)->get(route('asesor.reviews.download', [$session, 'format' => 'word']));
+    $responseWord->assertOk()
+        ->assertHeader('content-type', 'application/msword; charset=utf-8')
+        ->assertSee('Jawaban peserta')->assertSee('Review Test')->assertSee('Lembar Jawaban Peserta');
+});
+
+test('export includes rich text tables plain answers and textbox text without current material pages', function () {
+    ['assessor' => $assessor, 'session' => $session] = submittedSessionForReview();
+    $scene = htmlspecialchars(json_encode([['type' => 'text', 'points' => [[10, 20]], 'text' => 'Penyebab mesin']]), ENT_QUOTES);
+    $answer = '<p>Analisis lengkap</p><table><tr><td>Data penting</td></tr></table><span data-answer-scene="'.$scene.'"></span>';
+    $submission = $session->submissions()->first();
+    $submission->update(['response_text' => json_encode([1 => $answer, 2 => 'Jawaban kedua'])]);
+    $word = $this->actingAs($assessor)->get(route('asesor.reviews.download', [$session, 'format' => 'word']))->assertOk()->getContent();
+    expect(quoted_printable_decode($word))->toContain('Analisis lengkap', '<table>', 'Data penting', 'Penyebab mesin', 'Jawaban kedua');
+    expect($word)->toContain('Content-Type: image/png', 'multipart/related');
+    $pdf = $this->get(route('asesor.reviews.download', [$session, 'format' => 'pdf']))->assertOk()->getContent();
+    expect($pdf)->toContain('/Subtype /Image');
+    $submission->update(['response_text' => 'Respons kasus teks biasa']);
+    $this->get(route('asesor.reviews.download', [$session, 'format' => 'word']))
+        ->assertOk()->assertSee('Respons kasus teks biasa');
 });

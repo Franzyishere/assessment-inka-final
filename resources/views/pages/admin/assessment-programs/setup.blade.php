@@ -50,18 +50,24 @@
 
     <section class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
         <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div class="flex items-center gap-3"><span class="inline-flex size-7 items-center justify-center rounded-full bg-brand-500 text-sm font-semibold text-white">2</span><div><h3 class="font-semibold text-gray-800 dark:text-white/90">Peserta Assessment</h3><p class="mt-1 text-sm text-gray-500"><span x-text="selectedParticipants.length"></span> peserta dipilih.</p></div></div><div class="relative w-full sm:max-w-xs"><svg class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="m13 13 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><input type="search" x-model.debounce.200ms="participantSearch" placeholder="Cari nama atau email..." class="h-10 w-full rounded-lg border border-gray-300 bg-transparent pl-9 pr-3 text-sm text-gray-700 focus:border-brand-300 focus:outline-hidden dark:border-gray-700 dark:text-gray-300"></div></div>
-        <div class="grid max-h-[430px] grid-cols-1 gap-2 overflow-y-auto md:grid-cols-2 xl:grid-cols-3">
-            @forelse ($participants as $participant)
-                <div x-show="participantMatches(@js(Str::lower($participant->name.' '.$participant->email)))" class="rounded-xl border border-gray-200 p-3 dark:border-gray-800"><label class="flex cursor-pointer items-center gap-3"><input type="checkbox" name="participant_ids[]" value="{{ $participant->id }}" x-model.number="selectedParticipants" class="size-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"><span class="min-w-0"><span class="block truncate text-sm font-medium text-gray-700 dark:text-gray-300">{{ $participant->name }}</span><span class="block truncate text-xs text-gray-500">{{ $participant->email }}</span></span></label><select name="participant_categories[{{ $participant->id }}]" :disabled="!selectedParticipants.includes({{ (int) $participant->id }})" class="mt-3 h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-xs text-gray-700 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 dark:border-gray-700 dark:text-gray-300 dark:disabled:bg-white/5"><option value="">Tujuan assessment belum ditentukan</option>@foreach($assessmentCategories as $value => $label)<option value="{{ $value }}" @selected(old("participant_categories.{$participant->id}", $selectedParticipantCategories[$participant->id] ?? '') === $value)>{{ $label }}</option>@endforeach</select><label for="simulation-choice-{{ $participant->id }}" class="mt-3 block text-xs font-medium text-gray-600">Materi Simulasi 3</label><select id="simulation-choice-{{ $participant->id }}" name="participant_simulation_three_choices[{{ $participant->id }}]" :disabled="!selectedParticipants.includes({{ (int) $participant->id }})" class="mt-1 h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-xs text-gray-700 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"><option value="">Belum ditetapkan</option>@foreach($simulationThreeOptions as $value => $label)<option value="{{ $value }}" @selected(old("participant_simulation_three_choices.{$participant->id}", $selectedParticipantChoices[$participant->id] ?? '') === $value)>{{ $label }}</option>@endforeach</select>@error("participant_simulation_three_choices.{$participant->id}")<p class="mt-1 text-xs text-error-600">{{ $message }}</p>@enderror</div>
-            @empty
-                <p class="col-span-full text-sm text-gray-500">Belum ada akun peserta assessment.</p>
-            @endforelse
-        </div>
+        @include('pages.admin.assessment-programs._participant-picker')
         @error('participant_ids')<p class="mt-4 text-sm text-error-500">{{ $message }}</p>@enderror
     </section>
 
+    <section class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+        <label class="flex cursor-pointer items-start gap-3">
+            <input type="checkbox" name="auto_send_invitations" value="1" @checked(old('auto_send_invitations', $program->auto_send_invitations ?? true)) class="mt-0.5 size-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500">
+            <div>
+                <span class="block text-sm font-semibold text-gray-800 dark:text-white/90">Kirim email undangan otomatis ke peserta</span>
+                <span class="block text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                    Undangan akan otomatis dikirim <strong>10 menit sebelum program aktif</strong>. Jika program sudah aktif atau waktu mulai kurang dari 10 menit lagi, undangan akan langsung dikirim saat pengaturan disimpan. Peserta lama yang sudah pernah diundang tidak akan dikirimi ulang.
+                </span>
+            </div>
+        </label>
+    </section>
+
     @if ($errors->any())<div class="rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">Pengaturan belum tersimpan. Periksa kembali pilihan yang ditandai.</div>@endif
-    <div class="flex flex-wrap justify-end gap-3"><a href="{{ route('admin.assessment-programs.index') }}" class="crud-btn-secondary">Kembali</a><button class="crud-btn-primary">Simpan Pengaturan</button></div>
+    <div class="flex flex-wrap justify-end gap-3"><a href="{{ route($program->archived_at ? 'admin.result-archives.index' : 'admin.assessment-programs.index') }}" class="crud-btn-secondary">Kembali</a><button class="crud-btn-primary">Simpan Pengaturan</button></div>
 
     <div x-show="assessorValidationOpen" x-cloak @keydown.escape.window="assessorValidationOpen = false" class="fixed inset-0 z-99999 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="assessor-validation-title">
         <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" @click="assessorValidationOpen = false"></div>

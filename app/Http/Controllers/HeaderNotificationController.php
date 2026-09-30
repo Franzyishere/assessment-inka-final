@@ -13,7 +13,8 @@ class HeaderNotificationController extends Controller
         $user = $request->user();
         $items = [];
         if (in_array($user->role, ['admin', 'super_admin'], true)) {
-            $count = SimulationSession::where('status', 'submitted')->whereDoesntHave('reviews', fn ($q) => $q->where('status', 'submitted'))->count();
+            $count = SimulationSession::where('status', 'submitted')
+                ->whereDoesntHave('reviews', fn ($q) => $q->where('status', 'submitted'))->count();
             if ($count) $items[] = ['title' => "$count submission belum memiliki penilaian final", 'url' => route('admin.monitoring.index')];
         } elseif ($user->role === 'asesor') {
             $count = SimulationSession::where('status', 'submitted')

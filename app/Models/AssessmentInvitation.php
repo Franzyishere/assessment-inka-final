@@ -50,6 +50,7 @@ class AssessmentInvitation extends Model
         $program = $participant?->program;
 
         return ! $this->revoked_at
+            && $program
             && $participant?->status === 'assigned'
             && $participant->user?->role === 'peserta_assessment'
             && strcasecmp($participant->user->email, $this->email) === 0

@@ -56,6 +56,7 @@ class MenuHelper
                 self::item('calendar', 'Undangan', 'admin.invitations.index'),
                 self::item('task', 'Penugasan Asesor', 'admin.assessor-assignments.index'),
                 self::item('charts', 'Monitoring', 'admin.monitoring.index'),
+                self::item('tables', 'Arsip Program Assessment', 'admin.result-archives.index'),
             ]],
         ];
     }
@@ -78,6 +79,7 @@ class MenuHelper
                 self::item('calendar', 'Undangan', 'admin.invitations.index'),
                 self::item('task', 'Penugasan Asesor', 'admin.assessor-assignments.index'),
                 self::item('charts', 'Monitoring', 'admin.monitoring.index'),
+                self::item('tables', 'Arsip Program Assessment', 'admin.result-archives.index'),
             ]],
         ];
     }
@@ -92,7 +94,7 @@ class MenuHelper
                 self::item('forms', 'Simulasi Ditugaskan', 'asesor.simulations.index'),
                 self::item('user-profile', 'Peserta', 'asesor.participants.index'),
                 self::item('charts', 'Monitoring', 'asesor.monitoring.index'),
-                self::item('task', 'Penilaian & Rekomendasi', 'asesor.reviews.index'),
+                self::item('task', 'Hasil Assessment', 'asesor.reviews.index'),
             ]],
         ];
     }
@@ -119,6 +121,7 @@ class MenuHelper
             self::item('calendar', 'Undangan Assessment', 'admin.invitations.index'),
             self::item('task', 'Penugasan Asesor', 'admin.assessor-assignments.index'),
             self::item('charts', 'Monitoring', 'admin.monitoring.index'),
+            self::item('tables', 'Arsip Program Assessment', 'admin.result-archives.index'),
         ];
     }
 
@@ -132,6 +135,7 @@ class MenuHelper
             self::item('calendar', 'Undangan Assessment', 'admin.invitations.index'),
             self::item('task', 'Penugasan Asesor', 'admin.assessor-assignments.index'),
             self::item('charts', 'Monitoring', 'admin.monitoring.index'),
+            self::item('tables', 'Arsip Program Assessment', 'admin.result-archives.index'),
         ];
     }
 
@@ -142,7 +146,7 @@ class MenuHelper
             self::item('forms', 'Simulasi Ditugaskan', 'asesor.simulations.index'),
             self::item('user-profile', 'Peserta Assessment', 'asesor.participants.index'),
             self::item('charts', 'Monitoring Simulasi', 'asesor.monitoring.index'),
-            self::item('task', 'Penilaian & Rekomendasi', 'asesor.reviews.index'),
+            self::item('task', 'Hasil Assessment', 'asesor.reviews.index'),
         ];
     }
 

@@ -7,20 +7,19 @@
 
 <div class="mb-5 rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs"><x-common.search-form :action="route('asesor.monitoring.program', $program)" placeholder="Cari program atau simulasi..." /></div>
 
-<div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
+<div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
     @forelse($simulations as $simulation)
         <article class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-theme-xs">
             <div class="h-1 bg-brand-500"></div>
-            <div class="p-5">
+            <div class="p-4">
                 <div class="flex items-start justify-between gap-4">
                     <div><span class="text-xs font-semibold uppercase tracking-wide text-brand-600">Simulasi {{ $simulation->scenario->type->sequence }}</span><h2 class="mt-1 font-semibold text-gray-900">{{ $simulation->scenario->simulationThreePackageLabel() ?? $simulation->scenario->type->name }}</h2><p class="mt-1 text-sm text-gray-500">{{ $simulation->program->name }}</p></div>
-                    <span class="rounded-full bg-success-50 px-2.5 py-1 text-xs font-medium text-success-700">{{ ucfirst($simulation->status) }}</span>
+                    <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium {{ $simulation->statusBadgeClass() }}">{{ $simulation->statusLabel() }}</span>
                 </div>
                 <div class="mt-5 flex items-center justify-between text-xs text-gray-500"><span>Progres pengumpulan</span><span class="font-semibold text-gray-700">{{ $simulation->progress }}%</span></div>
                 <div class="mt-2 h-2.5 overflow-hidden rounded-full bg-gray-100"><div class="h-full rounded-full bg-brand-500 transition-all" style="width: {{ $simulation->progress }}%"></div></div>
-                <p class="mt-2 text-xs text-gray-500">{{ $simulation->progress }}% peserta telah mengumpulkan</p>
-                <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
-                    @foreach([['Peserta', $simulation->expected_count], ['Mulai', $simulation->started_count], ['Masuk', $simulation->submitted_count], ['Dinilai', $simulation->reviewed_count], ['Aktivitas', $simulation->event_count]] as [$label, $value])
+                <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    @foreach([['Peserta', $simulation->expected_count], ['Mulai', $simulation->started_count], ['Masuk', $simulation->submitted_count], ['Aktivitas', $simulation->event_count]] as [$label, $value])
                         <div class="rounded-xl border border-gray-100 bg-gray-50 p-3 text-center"><p class="text-xs text-gray-500">{{ $label }}</p><p class="mt-1 text-xl font-semibold text-gray-900">{{ $value }}</p></div>
                     @endforeach
                 </div>

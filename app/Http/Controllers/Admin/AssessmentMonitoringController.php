@@ -11,6 +11,8 @@ class AssessmentMonitoringController extends Controller
 {
     public function index(Request $request): View
     {
+        AssessmentProgram::syncLifecycle();
+
         $programs = AssessmentProgram::query()
             ->withCount(['participants', 'simulations'])
             ->when($request->filled('search'), fn ($query) => $query->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower(trim((string) $request->query('search'))).'%']))
@@ -57,5 +59,59 @@ class AssessmentMonitoringController extends Controller
                 'progress' => $expectedSessions > 0 ? round(($submittedSessions->count() / $expectedSessions) * 100) : 0,
             ],
         ]);
+    }
+
+    public function startSimulation(AssessmentProgram $assessmentProgram, int $sequence): \Illuminate\Http\RedirectResponse
+    {
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($assessmentProgram, $sequence) {
+            $assessmentProgram = AssessmentProgram::query()->lockForUpdate()->findOrFail($assessmentProgram->id);
+            if ($assessmentProgram->status !== 'active' || $assessmentProgram->archived_at || $assessmentProgram->ends_at?->isPast()) {
+                return back()->with('error', 'Sesi hanya dapat dibuka pada program aktif yang belum berakhir dan tidak diarsipkan.');
+            }
+            abort_unless(in_array($sequence, [1, 2, 3, 4], true), 404);
+
+            $matchingSimulations = $assessmentProgram->simulations()
+                ->whereHas('scenario.type', fn ($query) => $query->where('sequence', $sequence))
+                ->get();
+
+            if ($matchingSimulations->isEmpty()) {
+                return back()->with('error', "Simulasi {$sequence} tidak ditemukan pada program ini.");
+            }
+
+            $assessmentProgram->simulations()
+                ->whereIn('id', $matchingSimulations->pluck('id'))
+                ->update([
+                    'status' => \App\Models\AssessmentProgramSimulation::STATUS_IN_PROGRESS,
+                    'opens_at' => now(),
+                    'closes_at' => null,
+                ]);
+
+            return back()->with('success', "Sesi Simulasi {$sequence} berhasil dibuka. Peserta sekarang dapat memulai pengerjaan.");
+        });
+    }
+
+    public function closeSimulation(AssessmentProgram $assessmentProgram, int $sequence): \Illuminate\Http\RedirectResponse
+    {
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($assessmentProgram, $sequence) {
+            $assessmentProgram = AssessmentProgram::query()->lockForUpdate()->findOrFail($assessmentProgram->id);
+            abort_unless(in_array($sequence, [1, 2, 3, 4], true), 404);
+
+            $matchingSimulations = $assessmentProgram->simulations()
+                ->whereHas('scenario.type', fn ($query) => $query->where('sequence', $sequence))
+                ->get();
+
+            if ($matchingSimulations->isEmpty()) {
+                return back()->with('error', "Simulasi {$sequence} tidak ditemukan pada program ini.");
+            }
+
+            $assessmentProgram->simulations()
+                ->whereIn('id', $matchingSimulations->pluck('id'))
+                ->update([
+                    'status' => \App\Models\AssessmentProgramSimulation::STATUS_COMPLETED,
+                    'closes_at' => now(),
+                ]);
+
+            return back()->with('success', "Sesi Simulasi {$sequence} berhasil ditutup.");
+        });
     }
 }

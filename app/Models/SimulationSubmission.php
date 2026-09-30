@@ -14,7 +14,7 @@ class SimulationSubmission extends Model
 
     protected function casts(): array
     {
-        return ['file_size' => 'integer', 'revision' => 'integer', 'submitted_at' => 'datetime'];
+        return ['diagrams' => 'array', 'file_size' => 'integer', 'revision' => 'integer', 'submitted_at' => 'datetime'];
     }
 
     public function session(): BelongsTo

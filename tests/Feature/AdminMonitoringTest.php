@@ -32,7 +32,7 @@ test('admin monitors participant simulation and review progress', function () {
 
     $this->actingAs($admin)->get(route('admin.monitoring.index'))->assertOk()->assertSee('Monitoring Program');
     $this->actingAs($admin)->get(route('admin.monitoring.show', $program))->assertOk()
-        ->assertSee('Simulasi 4 - Presentasi Peserta')->assertSee('Dikumpulkan')->assertSee('Penilaian final')->assertSee('100%');
+        ->assertSee('Simulasi 4 - Presentasi Peserta')->assertSee('Dikumpulkan')->assertSee('Jawaban dikumpulkan')->assertDontSee('Menunggu penilaian')->assertSee('100%');
 });
 
 test('non admin cannot access assessment monitoring', function () {

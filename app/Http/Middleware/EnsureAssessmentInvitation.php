@@ -14,6 +14,7 @@ class EnsureAssessmentInvitation
         if ($request->user()?->role !== 'peserta_assessment' || $request->routeIs('logout')) {
             return $next($request);
         }
+
         $invitation = AssessmentInvitation::with('participant.user', 'participant.program')->find($request->session()->get('assessment_invitation_id'));
         if (! $invitation || ! $invitation->isAccessible()
             || $invitation->participant->user_id !== $request->user()->id
@@ -21,7 +22,9 @@ class EnsureAssessmentInvitation
             Auth::guard('web')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
-            $message = 'Akses undangan tidak aktif. Silakan masuk melalui undangan yang berlaku pada hari pelaksanaan.';
+            $message = ($invitation && now()->gte($invitation->expires_at))
+                ? 'Masa berlaku sesi assessment telah berakhir (maksimal pukul 17.00 WIB).'
+                : 'Akses undangan tidak aktif. Silakan masuk melalui undangan yang berlaku pada hari pelaksanaan.';
 
             return $request->expectsJson()
                 ? response()->json(['message' => $message], 401)

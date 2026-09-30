@@ -9,13 +9,26 @@ use App\Services\AssessmentInvitationService;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class SendAssessmentInvitation implements ShouldBeEncrypted, ShouldQueue
 {
     use Queueable;
 
-    public int $tries = 1;
+    public int $tries = 3;
+
+    public function backoff(): array
+    {
+        return [60, 180];
+    }
+
+    public function middleware(): array
+    {
+        return [(new WithoutOverlapping('assessment-email-'.$this->deliveryId))
+            ->releaseAfter(60)->expireAfter(90)];
+    }
 
     public int $timeout = 45;
 
@@ -42,7 +55,11 @@ class SendAssessmentInvitation implements ShouldBeEncrypted, ShouldQueue
             ));
             $delivery->update(['status' => 'accepted', 'sent_at' => now()]);
         } catch (\Throwable $exception) {
-            $delivery->update(['status' => 'failed']);
+            Log::warning('Invitation email delivery attempt failed.', [
+                'delivery_id' => $this->deliveryId, 'error_type' => $exception::class,
+            ]);
+            // Do not persist transport details or a previous exception containing secrets.
+            throw new \RuntimeException('Pengiriman undangan gagal; periksa layanan email.');
         }
     }
 

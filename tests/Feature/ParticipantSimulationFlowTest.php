@@ -1,9 +1,6 @@
 <?php
 
-// Exercise assessment business rules independently; real invitation/OTP gating is
-// covered without middleware bypass in AssessmentInvitationAccessTest.
-beforeEach(fn () => $this->withoutMiddleware(\App\Http\Middleware\EnsureAssessmentInvitation::class));
-
+use App\Http\Middleware\EnsureAssessmentInvitation;
 use App\Models\AssessmentParticipant;
 use App\Models\AssessmentProgram;
 use App\Models\AssessmentProgramSimulation;
@@ -15,11 +12,14 @@ use App\Models\SimulationType;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 
+// Real invitation/OTP gating is tested separately without middleware bypass.
+beforeEach(fn () => $this->withoutMiddleware(EnsureAssessmentInvitation::class));
+
 beforeEach(function () {
     $this->seed(DatabaseSeeder::class);
 });
 
-function assignedProblemAnalysis(): array
+function assignedProblemAnalysis(string $status = AssessmentProgramSimulation::STATUS_IN_PROGRESS): array
 {
     $admin = User::where('role', User::ROLE_ADMIN)->firstOrFail();
     $participant = User::where('role', User::ROLE_PESERTA_ASSESSMENT)->firstOrFail();
@@ -29,7 +29,7 @@ function assignedProblemAnalysis(): array
     foreach (range(1, 2) as $page) {
         SimulationMaterialPage::create(['simulation_scenario_id' => $scenario->id, 'title' => "Materi {$page}", 'content' => "Konten {$page}", 'page_order' => $page, 'is_required' => true]);
     }
-    $programSimulation = AssessmentProgramSimulation::create(['assessment_program_id' => $program->id, 'simulation_scenario_id' => $scenario->id, 'status' => 'scheduled']);
+    $programSimulation = AssessmentProgramSimulation::create(['assessment_program_id' => $program->id, 'simulation_scenario_id' => $scenario->id, 'status' => $status]);
     AssessmentParticipant::create(['assessment_program_id' => $program->id, 'user_id' => $participant->id, 'status' => 'assigned', 'assigned_at' => now()]);
 
     return compact('participant', 'programSimulation');
@@ -48,6 +48,26 @@ test('assigned participant can start save and submit problem analysis', function
 
     expect(SimulationSession::firstOrFail()->status)->toBe('submitted')
         ->and(SimulationSession::firstOrFail()->submissions->first()->response_text)->toContain('Jawaban halaman pertama');
+});
+
+test('material highlights persist per session and material and reject unauthorized or invalid changes', function () {
+    ['participant' => $participant, 'programSimulation' => $programSimulation] = assignedProblemAnalysis();
+    $this->actingAs($participant)->post(route('peserta-assessment.simulations.start', $programSimulation));
+    $materials = $programSimulation->scenario->materialPages;
+    $url = route('peserta-assessment.simulations.material.highlights', [$programSimulation, $materials->first()]);
+    $marks = [['page' => 1, 'x' => .1, 'y' => .2, 'width' => .3, 'height' => .02]];
+    $this->putJson($url, ['highlights' => $marks])->assertOk();
+    $this->getJson($url)->assertOk()->assertJson(['highlights' => $marks]);
+    $this->getJson(route('peserta-assessment.simulations.material.highlights', [$programSimulation, $materials->last()]))
+        ->assertOk()->assertJson(['highlights' => []]);
+    $this->putJson($url, ['highlights' => [['page' => 0, 'x' => -1]]])->assertUnprocessable();
+    $other = User::create(['name' => 'Other', 'email' => 'highlight-other@example.test', 'role' => User::ROLE_PESERTA_ASSESSMENT, 'password' => 'password']);
+    $this->actingAs($other)->getJson($url)->assertNotFound();
+    $this->actingAs($other)->putJson($url, ['highlights' => []])->assertNotFound();
+    $this->actingAs($participant)->putJson($url, ['highlights' => []])->assertOk();
+    $this->getJson($url)->assertJson(['highlights' => []]);
+    SimulationSession::query()->update(['status' => 'submitted']);
+    $this->putJson($url, ['highlights' => $marks])->assertForbidden();
 });
 
 test('participant cannot submit while a required material page is unanswered', function () {
@@ -134,6 +154,69 @@ test('participant can save an intermediate material without a page reload', func
 
     expect(SimulationSession::firstOrFail()->submissions()->firstOrFail()->response_text)
         ->toContain('Jawaban materi pertama');
+});
+
+test('diagrams survive save reload and final submission without a separate save', function () {
+    ['participant' => $participant, 'programSimulation' => $programSimulation] = assignedProblemAnalysis();
+    $this->actingAs($participant)->post(route('peserta-assessment.simulations.start', $programSimulation));
+    $diagram = [['type' => 'arrow', 'points' => [[10, 20], [300, 100]]], ['type' => 'text', 'points' => [[20, 40]], 'text' => 'Penyebab']];
+    $this->putJson(route('peserta-assessment.simulations.material.save', [$programSimulation, 1]), [
+        'response' => 'Analisis pertama', 'diagram' => json_encode($diagram),
+    ])->assertOk();
+    $this->get(route('peserta-assessment.simulations.material', [$programSimulation, 1]))
+        ->assertOk()->assertSee('data-insert-shape', false)->assertViewHas('diagrams', fn ($diagrams) => $diagrams[1] === $diagram);
+    $this->put(route('peserta-assessment.simulations.material.save', [$programSimulation, 2]), [
+        'response' => 'Analisis terakhir', 'diagram' => json_encode($diagram), 'submit_after_save' => 1,
+    ])->assertSessionHasNoErrors();
+    $submission = SimulationSession::firstOrFail()->submissions()->firstOrFail();
+    expect($submission->diagrams[1])->toBe($diagram)->and($submission->diagrams[2])->toBe($diagram);
+    expect(SimulationSession::firstOrFail()->status)->toBe('submitted');
+    $this->putJson(route('peserta-assessment.simulations.material.save', [$programSimulation, 2]), [
+        'response' => 'Ubah', 'diagram' => '[]',
+    ])->assertForbidden();
+});
+
+test('invalid diagram is rejected without saving and diagrams cannot bypass participant ownership', function () {
+    ['participant' => $participant, 'programSimulation' => $programSimulation] = assignedProblemAnalysis();
+    $this->actingAs($participant)->post(route('peserta-assessment.simulations.start', $programSimulation));
+    foreach (['invalid', '{"type":"line"}', '[{"type":"script","points":[[0,0]]}]', '[{"type":"line","points":[[0,0],[2000,0]]}]'] as $json) {
+        $this->putJson(route('peserta-assessment.simulations.material.save', [$programSimulation, 1]), [
+            'response' => 'Analisis', 'diagram' => $json,
+        ])->assertUnprocessable()->assertJsonValidationErrors('diagram');
+    }
+    expect(SimulationSession::firstOrFail()->submissions()->count())->toBe(0);
+    $other = User::factory()->create(['role' => User::ROLE_PESERTA_ASSESSMENT]);
+    $this->actingAs($other)->putJson(route('peserta-assessment.simulations.material.save', [$programSimulation, 1]), [
+        'response' => 'Analisis', 'diagram' => '[]',
+    ])->assertNotFound();
+});
+
+test('embedded shapes are valid answers and replace legacy diagrams on final submission', function () {
+    ['participant' => $participant, 'programSimulation' => $programSimulation] = assignedProblemAnalysis();
+    $programSimulation->scenario->materialPages()->where('page_order', 2)->delete();
+    $this->actingAs($participant)->post(route('peserta-assessment.simulations.start', $programSimulation));
+    $scene = [['type' => 'text', 'points' => [[100, 100]], 'width' => 220, 'height' => 100, 'text' => 'Penyebab utama']];
+    $answer = '<span data-answer-scene="'.htmlspecialchars(json_encode($scene), ENT_QUOTES).'"></span>';
+    $this->put(route('peserta-assessment.simulations.material.save', [$programSimulation, 1]), [
+        'response' => $answer, 'diagram' => '[]', 'submit_after_save' => 1,
+    ])->assertSessionHasNoErrors()->assertRedirect(route('peserta-assessment.simulations.index'));
+    $submission = SimulationSession::firstOrFail()->submissions()->firstOrFail();
+    expect($submission->response_text)->toContain('data-answer-scene', 'Penyebab utama');
+    expect($submission->diagrams[1])->toBe([]);
+    expect(SimulationSession::firstOrFail()->status)->toBe('submitted');
+});
+
+test('autosave persists partial drafts without submitting and restores them on reload', function () {
+    ['participant' => $participant, 'programSimulation' => $simulation] = assignedProblemAnalysis();
+    $this->actingAs($participant)->post(route('peserta-assessment.simulations.start', $simulation));
+    $url = route('peserta-assessment.simulations.material.save', [$simulation, 1]);
+    $this->putJson($url, ['response' => '', 'draft_only' => true])->assertOk()->assertJson(['draft_saved' => true]);
+    $this->putJson($url, ['response' => '<p>Draft belum selesai</p>', 'draft_only' => true])->assertOk();
+    expect(SimulationSession::firstOrFail()->status)->toBe('in_progress');
+    expect(SimulationSession::firstOrFail()->submissions()->firstOrFail()->submitted_at)->toBeNull();
+    $this->get(route('peserta-assessment.simulations.material', [$simulation, 1]))->assertOk()->assertViewHas('responses', fn ($responses) => $responses[1] === '<p>Draft belum selesai</p>');
+    SimulationSession::firstOrFail()->update(['status' => 'submitted']);
+    $this->putJson($url, ['response' => 'terlambat', 'draft_only' => true])->assertForbidden();
 });
 
 test('participant simulation list hides programs and simulations after their execution time ends', function () {

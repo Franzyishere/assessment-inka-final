@@ -26,6 +26,7 @@ class UpdateAssessmentProgramSetupRequest extends FormRequest
             'participant_simulation_three_choices.*' => ['nullable', Rule::in(array_keys(SimulationScenario::SIMULATION_THREE_PACKAGES + SimulationScenario::LEGACY_SIMULATION_THREE_PACKAGES))],
             'assessor_ids' => ['required', 'array', 'min:1'],
             'assessor_ids.*' => ['integer', 'distinct', Rule::exists('users', 'id')->where('role', User::ROLE_ASESOR)],
+            'auto_send_invitations' => ['nullable', 'boolean'],
         ];
     }
 

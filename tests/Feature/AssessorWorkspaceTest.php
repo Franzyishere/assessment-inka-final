@@ -41,7 +41,11 @@ test('assessor sees participants and monitoring only for assigned simulations', 
         ->assertOk()
         ->assertSee('Simulasi 1 - Problem Analysis')
         ->assertViewHas('simulations', fn ($simulations) => $simulations->count() === 1 && $simulations->first()->is($assignedSimulation))
-        ->assertSee('100% peserta telah mengumpulkan');
+        ->assertSee('100%')->assertSee('Progres pengumpulan')->assertSee('Belum Dimulai')->assertDontSee('>Dinilai<', false);
+
+    $this->get(route('asesor.dashboard'))->assertOk()
+        ->assertSee('Jawaban Dikumpulkan')->assertSee('Status Sesi Peserta')
+        ->assertDontSee('Menunggu Penilaian')->assertDontSee('Progres Penilaian');
 
     $this->actingAs($assessor)->get(route('asesor.simulations.index'))
         ->assertOk()->assertSee('Tidak ada penugasan aktif');

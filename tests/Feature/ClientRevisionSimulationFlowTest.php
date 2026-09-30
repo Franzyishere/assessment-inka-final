@@ -34,8 +34,8 @@ test('lgd reviews submitted problem analysis with timer and participant submissi
     Storage::disk('local')->put('simulation-materials/instruksi-lgd.pdf', '%PDF-1.4 instruction');
     $material = SimulationMaterialPage::create(['simulation_scenario_id' => $problemScenario->id, 'title' => 'Materi 1', 'page_order' => 1, 'attachment_path' => 'simulation-materials/problem.pdf', 'attachment_name' => 'problem.pdf', 'attachment_mime_type' => 'application/pdf', 'attachment_size' => 13, 'is_required' => true]);
     $instruction = SimulationMaterialPage::create(['simulation_scenario_id' => $lgdScenario->id, 'title' => 'Instruksi LGD', 'page_order' => 1, 'attachment_path' => 'simulation-materials/instruksi-lgd.pdf', 'attachment_name' => 'instruksi-lgd.pdf', 'attachment_mime_type' => 'application/pdf', 'attachment_size' => 20, 'is_required' => true]);
-    $problemSimulation = AssessmentProgramSimulation::create(['assessment_program_id' => $program->id, 'simulation_scenario_id' => $problemScenario->id, 'status' => 'scheduled']);
-    $lgdSimulation = AssessmentProgramSimulation::create(['assessment_program_id' => $program->id, 'simulation_scenario_id' => $lgdScenario->id, 'status' => 'scheduled']);
+    $problemSimulation = AssessmentProgramSimulation::create(['assessment_program_id' => $program->id, 'simulation_scenario_id' => $problemScenario->id, 'status' => 'in_progress']);
+    $lgdSimulation = AssessmentProgramSimulation::create(['assessment_program_id' => $program->id, 'simulation_scenario_id' => $lgdScenario->id, 'status' => 'in_progress']);
     AssessmentParticipant::create(['assessment_program_id' => $program->id, 'user_id' => $participantUser->id, 'status' => 'assigned']);
 
     $this->actingAs($participantUser)->post(route('peserta-assessment.simulations.start', $problemSimulation));
@@ -69,8 +69,8 @@ test('simulation three shows only the pdf package matching participant category'
     $otherScenario = SimulationScenario::create(['simulation_type_id' => $type->id, 'simulation_package' => 'ci_1', 'code' => 'REV-CI-OTHER', 'title' => $type->name, 'duration_minutes' => 90, 'status' => 'active', 'created_by' => $admin->id]);
     Storage::disk('local')->put('simulation-materials/intray.pdf', '%PDF-1.4 test');
     SimulationMaterialPage::create(['simulation_scenario_id' => $ownScenario->id, 'title' => 'Materi 1', 'page_order' => 1, 'attachment_path' => 'simulation-materials/intray.pdf', 'attachment_name' => 'intray.pdf', 'attachment_mime_type' => 'application/pdf', 'attachment_size' => 13, 'is_required' => true]);
-    $ownSimulation = AssessmentProgramSimulation::create(['assessment_program_id' => $program->id, 'simulation_scenario_id' => $ownScenario->id, 'status' => 'scheduled']);
-    $otherSimulation = AssessmentProgramSimulation::create(['assessment_program_id' => $program->id, 'simulation_scenario_id' => $otherScenario->id, 'status' => 'scheduled']);
+    $ownSimulation = AssessmentProgramSimulation::create(['assessment_program_id' => $program->id, 'simulation_scenario_id' => $ownScenario->id, 'status' => 'in_progress']);
+    $otherSimulation = AssessmentProgramSimulation::create(['assessment_program_id' => $program->id, 'simulation_scenario_id' => $otherScenario->id, 'status' => 'in_progress']);
     AssessmentParticipant::create(['assessment_program_id' => $program->id, 'user_id' => $participantUser->id, 'assessment_category' => 'promotion_m', 'status' => 'assigned']);
 
     $this->actingAs($participantUser)->get(route('peserta-assessment.simulations.index'))
@@ -117,7 +117,8 @@ test('admin chooses madya simulation three material and it locks after participa
         ->and($participant->fresh()->simulation_three_chosen_at)->not->toBeNull()
         ->and(SimulationSession::count())->toBe(0);
 
-    $this->actingAs($participantUser)->post(route('peserta-assessment.simulations.start', $inTray));
+    $this->actingAs($admin)->post(route('admin.monitoring.simulations.start', [$program, 3]))->assertRedirect();
+    $this->actingAs($participantUser)->post(route('peserta-assessment.simulations.start', $inTray))->assertRedirect();
 
     $this->actingAs($admin)->put(route('admin.assessment-programs.setup.update', $program), [
         'participant_ids' => [$participantUser->id], 'participant_categories' => [$participantUser->id => AssessmentParticipant::MADYA_CATEGORY],

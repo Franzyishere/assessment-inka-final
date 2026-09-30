@@ -114,11 +114,11 @@ test('admin cannot delete program that was auto-activated because its start date
         'created_by' => $admin->id,
     ]);
 
-    // Admin visits programs index which triggers activation
+    // Admin visits programs index which triggers activation for due program
     $this->actingAs($admin)->get(route('admin.assessment-programs.index'))->assertOk();
     expect($program->fresh()->status)->toBe('active');
 
-    // Admin tries to delete it
+    // Admin tries to delete it while active -> forbidden
     $this->actingAs($admin)->delete(route('admin.assessment-programs.destroy', $program))
         ->assertSessionHas('error');
 

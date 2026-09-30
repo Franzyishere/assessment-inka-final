@@ -37,6 +37,8 @@ class DashboardController extends Controller
 
     public function admin(): View
     {
+        AssessmentProgram::syncLifecycle();
+
         $programCount = AssessmentProgram::count();
         $activePrograms = AssessmentProgram::where('status', 'active')->count();
         $scenarioCount = SimulationScenario::whereIn('status', ['active', 'published'])->count();
@@ -63,17 +65,15 @@ class DashboardController extends Controller
             ->get();
         $sessions = $assignments->pluck('programSimulation.sessions')->flatten();
         $programGroups = $assignments->groupBy(fn ($assignment) => $assignment->programSimulation->program?->name ?? 'Program');
-        $reviewedSessionIds = SimulationReview::query()->where('assessor_id', $request->user()->id)->where('status', 'submitted')->pluck('simulation_session_id');
         $submittedSessions = $sessions->where('status', 'submitted');
-        $waitingReviewCount = $submittedSessions->whereNotIn('id', $reviewedSessionIds)->count();
 
-        return $this->dashboard('Dashboard Asesor', 'Pantau peserta dan nilai simulasi yang ditugaskan kepada Anda.', [
+        return $this->dashboard('Dashboard Asesor', 'Pantau pelaksanaan simulasi dan akses jawaban peserta dari program penugasan Anda.', [
             ['label' => 'Simulasi Ditugaskan', 'value' => (string) $assignments->count(), 'description' => 'Penugasan aktif dari Admin HCGA'],
             ['label' => 'Peserta Dipantau', 'value' => (string) $sessions->pluck('assessment_participant_id')->unique()->count(), 'description' => 'Peserta yang sudah memulai simulasi'],
-            ['label' => 'Menunggu Penilaian', 'value' => (string) $waitingReviewCount, 'description' => 'Submission yang belum Anda finalisasi'],
+            ['label' => 'Jawaban Dikumpulkan', 'value' => (string) $submittedSessions->count(), 'description' => 'Tersedia melalui menu Hasil Assessment'],
         ], [
             $this->barChart('Submission per Program', 'Jawaban peserta yang telah dikumpulkan', $programGroups->keys()->all(), $programGroups->map(fn ($items) => $items->pluck('programSimulation.sessions')->flatten()->where('status', 'submitted')->count())->values()->all(), 'Submission'),
-            $this->donutChart('Progres Penilaian', 'Status penilaian submission yang masuk', ['Sudah Dinilai', 'Menunggu Penilaian'], [$submittedSessions->whereIn('id', $reviewedSessionIds)->count(), $waitingReviewCount]),
+            $this->donutChart('Status Sesi Peserta', 'Ringkasan sesi yang sudah dimulai', ['Dikumpulkan', 'Belum Dikumpulkan'], [$submittedSessions->count(), $sessions->count() - $submittedSessions->count()]),
         ]);
     }
 

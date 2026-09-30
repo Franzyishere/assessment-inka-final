@@ -9,6 +9,7 @@ use App\Models\AssessmentProgram;
 use App\Support\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -16,14 +17,15 @@ class AssessmentProgramController extends Controller
 {
     public function index(Request $request): View
     {
-        AssessmentProgram::activateDuePrograms();
+        AssessmentProgram::syncLifecycle();
 
         return view('pages.admin.assessment-programs.index', [
             'title' => 'Program Assessment',
             'programs' => AssessmentProgram::query()
+                ->whereNull('archived_at')
                 ->withCount(['participants', 'simulations'])
                 ->when($request->filled('search'), fn ($query) => $query->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower(trim((string) $request->query('search'))).'%']))
-                ->orderByDesc('starts_at')->orderBy('name')->orderBy('id')
+                ->orderByDesc('created_at')->orderByDesc('id')
                 ->paginate(10)->withQueryString(),
         ]);
     }
@@ -54,24 +56,31 @@ class AssessmentProgramController extends Controller
 
     public function update(UpdateAssessmentProgramRequest $request, AssessmentProgram $assessmentProgram): RedirectResponse
     {
-        $assessmentProgram->update($request->validated());
+        DB::transaction(function () use ($request, $assessmentProgram) {
+            $program = AssessmentProgram::query()->lockForUpdate()->findOrFail($assessmentProgram->id);
+            $program->update($request->validated());
+        });
 
-        return to_route('admin.assessment-programs.index')->with('success', 'Program assessment berhasil diperbarui.');
+        return to_route($assessmentProgram->archived_at ? 'admin.result-archives.index' : 'admin.assessment-programs.index')->with('success', 'Program assessment berhasil diperbarui.');
     }
 
     public function destroy(Request $request, AssessmentProgram $assessmentProgram): RedirectResponse
     {
-        if ($assessmentProgram->status !== 'draft') {
-            return back()->with('error', 'Program hanya dapat dihapus saat masih berstatus draft.');
-        }
+        return DB::transaction(function () use ($request, $assessmentProgram) {
+            $assessmentProgram = AssessmentProgram::query()->lockForUpdate()->findOrFail($assessmentProgram->id);
+            if ($assessmentProgram->status === 'active') {
+                return back()->with('error', 'Program berstatus aktif tidak dapat dihapus. Ubah status program terlebih dahulu jika ingin menghapus.');
+            }
 
-        AuditLogger::record($request, 'assessment_program.deleted', $assessmentProgram, [
-            'code' => $assessmentProgram->code,
-            'name' => $assessmentProgram->name,
-        ]);
-        $assessmentProgram->delete();
+            AuditLogger::record($request, 'assessment_program.archived', $assessmentProgram, [
+                'code' => $assessmentProgram->code,
+                'name' => $assessmentProgram->name,
+            ]);
+            $assessmentProgram->archived_at ??= now();
+            $assessmentProgram->save();
 
-        return to_route('admin.assessment-programs.index')->with('success', 'Program assessment berhasil dihapus.');
+            return to_route('admin.assessment-programs.index')->with('success', 'Program dipindahkan ke Arsip Program Assessment. Akses dan penilaian asesor tetap tersedia.');
+        });
     }
 
     public function bulkDestroy(Request $request): RedirectResponse
@@ -81,24 +90,27 @@ class AssessmentProgramController extends Controller
             'ids.*' => ['integer', 'distinct', 'exists:assessment_programs,id'],
         ], ['ids.required' => 'Pilih minimal satu program yang akan dihapus.']);
 
-        $programs = AssessmentProgram::query()->whereIn('id', $validated['ids'])->get();
-        $deletable = $programs->where('status', 'draft');
+        return DB::transaction(function () use ($request, $validated) {
+            $programs = AssessmentProgram::query()->whereNull('archived_at')->whereIn('id', $validated['ids'])->orderBy('id')->lockForUpdate()->get();
+            $deletable = $programs->where('status', '!==', 'active');
 
-        foreach ($deletable as $program) {
-            AuditLogger::record($request, 'assessment_program.deleted', $program, [
-                'code' => $program->code,
-                'name' => $program->name,
-                'deletion_mode' => 'bulk',
-            ]);
-            $program->delete();
-        }
+            foreach ($deletable as $program) {
+                AuditLogger::record($request, 'assessment_program.archived', $program, [
+                    'code' => $program->code,
+                    'name' => $program->name,
+                    'deletion_mode' => 'bulk',
+                ]);
+                $program->archived_at = now();
+                $program->save();
+            }
 
-        $skipped = $programs->count() - $deletable->count();
-        $message = $deletable->count().' program draft berhasil dihapus.';
-        if ($skipped > 0) {
-            $message .= ' '.$skipped.' program aktif/selesai dilewati.';
-        }
+            $skipped = $programs->count() - $deletable->count();
+            $message = $deletable->count().' program dipindahkan ke Arsip Program Assessment. Akses dan penilaian asesor tetap tersedia.';
+            if ($skipped > 0) {
+                $message .= ' '.$skipped.' program berstatus aktif dilewati.';
+            }
 
-        return to_route('admin.assessment-programs.index')->with($deletable->isEmpty() ? 'error' : 'success', $message);
+            return to_route('admin.assessment-programs.index')->with($deletable->isEmpty() ? 'error' : 'success', $message);
+        });
     }
 }

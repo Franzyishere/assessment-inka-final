@@ -207,35 +207,47 @@ class AssessmentSimulationController extends Controller
 
     public function submitPresentation(Request $request, AssessmentProgramSimulation $programSimulation): RedirectResponse
     {
-        [$participation, $programSimulation] = $this->resolveAssignment($request, $programSimulation);
-        $session = $this->session($programSimulation, $participation);
-        abort_unless($session && $session->status === 'in_progress', 403, 'Sesi presentasi tidak aktif.');
-        abort_unless($programSimulation->scenario->type->delivery_mode === 'file_upload', 404);
-        $validated = $request->validate([
-            'presentation' => ['required', 'file', 'max:25600', 'mimes:pdf'],
-        ], [
-            'presentation.mimes' => 'File presentasi harus berformat PDF.',
-            'presentation.max' => 'Ukuran file maksimal 25 MB.',
-        ]);
+        $path = null;
+        try {
+            return DB::transaction(function () use ($request, $programSimulation, &$path) {
+                AssessmentProgram::query()->lockForUpdate()->findOrFail($programSimulation->assessment_program_id);
+                $programSimulation = AssessmentProgramSimulation::query()->findOrFail($programSimulation->id);
+                [$participation, $programSimulation] = $this->resolveAssignment($request, $programSimulation);
+                abort_unless($programSimulation->isAvailableForParticipant(), 403, 'Sesi presentasi sudah ditutup.');
+                $session = SimulationSession::query()->where('assessment_program_simulation_id', $programSimulation->id)->where('assessment_participant_id', $participation->id)->lockForUpdate()->first();
+                abort_unless($session && $session->status === 'in_progress', 403, 'Sesi presentasi tidak aktif.');
+                abort_unless($programSimulation->scenario->type->delivery_mode === 'file_upload', 404);
+                $validated = $request->validate([
+                    'presentation' => ['required', 'file', 'max:25600', 'mimes:pdf'],
+                ], [
+                    'presentation.mimes' => 'File presentasi harus berformat PDF.',
+                    'presentation.max' => 'Ukuran file maksimal 25 MB.',
+                ]);
 
-        $file = $validated['presentation'];
-        $storedName = Str::uuid().'.'.$file->getClientOriginalExtension();
-        $path = $file->storeAs('simulation-submissions/'.$session->id, $storedName, 'local');
-        abort_unless($path, 500, 'File gagal disimpan.');
+                abort_if($session->submissions()->exists(), 409, 'Presentasi sudah dikumpulkan.');
+                $file = $validated['presentation'];
+                $storedName = Str::uuid().'.'.$file->getClientOriginalExtension();
+                $path = $file->storeAs('simulation-submissions/'.$session->id, $storedName, 'local');
+                abort_unless($path, 500, 'File gagal disimpan.');
 
-        SimulationSubmission::create([
-            'simulation_session_id' => $session->id,
-            'original_filename' => $file->getClientOriginalName(),
-            'storage_path' => $path,
-            'mime_type' => $file->getMimeType(),
-            'file_size' => $file->getSize(),
-            'file_checksum' => hash_file('sha256', Storage::disk('local')->path($path)),
-            'revision' => 1,
-            'submitted_at' => now(),
-        ]);
-        $session->update(['status' => 'submitted', 'submitted_at' => now()]);
+                SimulationSubmission::create([
+                    'simulation_session_id' => $session->id,
+                    'original_filename' => $file->getClientOriginalName(),
+                    'storage_path' => $path,
+                    'mime_type' => $file->getMimeType(),
+                    'file_size' => $file->getSize(),
+                    'file_checksum' => hash_file('sha256', Storage::disk('local')->path($path)),
+                    'revision' => 1,
+                    'submitted_at' => now(),
+                ]);
+                $session->update(['status' => 'submitted', 'submitted_at' => now()]);
 
-        return to_route('peserta-assessment.simulations.presentation', $programSimulation)->with('success', 'File presentasi berhasil dikumpulkan dan siap dipresentasikan.');
+                return to_route('peserta-assessment.simulations.presentation', $programSimulation)->with('success', 'File presentasi berhasil dikumpulkan dan siap dipresentasikan.');
+            });
+        } catch (\Throwable $exception) {
+            if ($path) Storage::disk('local')->delete($path);
+            throw $exception;
+        }
     }
 
     public function previewPresentation(Request $request, AssessmentProgramSimulation $programSimulation)
@@ -435,6 +447,21 @@ class AssessmentSimulationController extends Controller
             abort_if($participation->requiresSimulationThreeChoice(), 403, 'Materi tersedia setelah ditetapkan oleh admin.');
         }
         abort_unless($material->simulation_scenario_id === $programSimulation->simulation_scenario_id, 404);
+        // PA material is also available during the participant's active LGD session.
+        $session = $this->session($programSimulation, $participation);
+        $allowed = $programSimulation->isAvailableForParticipant()
+            && $session?->status === 'in_progress' && (! $session->expires_at || $session->expires_at->isFuture());
+        if (! $allowed && $programSimulation->scenario->type->code === SimulationType::PROBLEM_ANALYSIS && $session?->status === 'submitted') {
+            $allowed = SimulationSession::query()
+                ->where('assessment_participant_id', $participation->id)
+                ->where('status', 'in_progress')
+                ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+                ->whereHas('programSimulation', fn ($query) => $query->where('assessment_program_id', $programSimulation->assessment_program_id)
+                    ->where('status', 'in_progress')->whereHas('program', fn ($program) => $program->where('status', 'active'))
+                    ->whereHas('scenario.type', fn ($type) => $type->where('code', SimulationType::LGD)))
+                ->exists();
+        }
+        abort_unless($allowed, 403, 'Materi hanya tersedia selama sesi pengerjaan aktif.');
         abort_unless($material->attachment_path && Storage::disk('local')->exists($material->attachment_path), 404);
 
         return Storage::disk('local')->response(

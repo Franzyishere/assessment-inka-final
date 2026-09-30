@@ -32,6 +32,15 @@ test('admin can view assessment program and simulation management pages', functi
         ->and(Route::has('admin.simulations.destroy'))->toBeFalse();
 });
 
+test('program list orders by newest creation rather than execution date', function () {
+    $admin = User::where('role', User::ROLE_ADMIN)->firstOrFail();
+    $old = AssessmentProgram::create(['name' => 'Program Lama', 'code' => 'ORDER-OLD', 'status' => 'draft', 'starts_at' => now()->addMonths(2), 'created_by' => $admin->id]);
+    $old->forceFill(['created_at' => now()->subDay()])->save();
+    $new = AssessmentProgram::create(['name' => 'Program Baru', 'code' => 'ORDER-NEW', 'status' => 'draft', 'starts_at' => now()->addDay(), 'created_by' => $admin->id]);
+    $this->actingAs($admin)->get(route('admin.assessment-programs.index'))->assertOk()
+        ->assertViewHas('programs', fn ($programs) => $programs->first()->id === $new->id);
+});
+
 test('admin can prepare a manual assessment participant for future hris matching', function () {
     $admin = User::query()->where('role', User::ROLE_ADMIN)->firstOrFail();
 
@@ -216,7 +225,7 @@ test('admin can delete a draft program but cannot delete an active program', fun
 
     $this->actingAs($admin)->delete(route('admin.assessment-programs.destroy', $draft))
         ->assertRedirect(route('admin.assessment-programs.index'));
-    $this->assertDatabaseMissing('assessment_programs', ['id' => $draft->id]);
+    expect($draft->fresh()->archived_at)->not->toBeNull();
 
     $this->actingAs($admin)->delete(route('admin.assessment-programs.destroy', $active))
         ->assertSessionHas('error');
@@ -234,7 +243,7 @@ test('admin can bulk delete draft programs while protected programs remain', fun
         'ids' => [...$drafts->pluck('id'), $active->id],
     ])->assertRedirect(route('admin.assessment-programs.index'))->assertSessionHas('success');
 
-    foreach ($drafts as $draft) $this->assertDatabaseMissing('assessment_programs', ['id' => $draft->id]);
+    foreach ($drafts as $draft) expect($draft->fresh()->archived_at)->not->toBeNull();
     $this->assertDatabaseHas('assessment_programs', ['id' => $active->id]);
 });
 

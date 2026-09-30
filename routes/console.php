@@ -9,4 +9,5 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('assessment:activate-due-programs')->everyMinute();
-
+Schedule::command('assessment:send-due-invitations')->everyMinute()->withoutOverlapping();
+Schedule::command('assessment:complete-ended-programs')->everyMinute();

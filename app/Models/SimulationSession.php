@@ -17,7 +17,7 @@ class SimulationSession extends Model
 
     protected function casts(): array
     {
-        return ['started_at' => 'datetime', 'expires_at' => 'datetime', 'submitted_at' => 'datetime'];
+        return ['started_at' => 'datetime', 'expires_at' => 'datetime', 'submitted_at' => 'datetime', 'material_highlights' => 'array'];
     }
 
     public function programSimulation(): BelongsTo
