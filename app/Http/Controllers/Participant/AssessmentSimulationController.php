@@ -44,6 +44,10 @@ class AssessmentSimulationController extends Controller
                         || ($participation->program->ends_at && $participation->program->ends_at->isPast())) {
                         return false;
                     }
+                    if ($simulation->scenario->type->delivery_mode === 'file_upload') {
+                        return true;
+                    }
+
                     if ($simulation->scenario->type->delivery_mode !== 'case_response') {
                         return $participation->sessions->firstWhere('assessment_program_simulation_id', $simulation->id)?->status !== 'submitted';
                     }

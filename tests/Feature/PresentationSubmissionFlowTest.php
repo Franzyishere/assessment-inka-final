@@ -50,6 +50,10 @@ test('participant uploads presentation and assigned assessor can download it', f
     $this->actingAs($participant)->get(route('peserta-assessment.simulations.presentation.download', $programSimulation))
         ->assertDownload('presentasi.pdf');
 
+    // Card remains visible on participant dashboard with "Tampilkan Presentasi" button
+    $this->actingAs($participant)->get(route('peserta-assessment.simulations.index'))
+        ->assertOk()->assertSee('Simulasi 4')->assertSee('Tampilkan Presentasi');
+
     $this->actingAs($assessor)->get(route('asesor.simulations.show', $programSimulation))->assertOk()->assertSee('presentasi.pdf');
     $this->actingAs($assessor)->get(route('asesor.submissions.preview', $submission))->assertOk()->assertHeader('content-type', 'application/pdf');
     $this->actingAs($assessor)->get(route('asesor.submissions.download', $submission))->assertDownload('presentasi.pdf');
