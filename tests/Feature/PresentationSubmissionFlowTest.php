@@ -36,11 +36,20 @@ test('participant uploads presentation and assigned assessor can download it', f
         ->assertRedirect(route('peserta-assessment.simulations.presentation', $programSimulation));
     $this->actingAs($participant)->post(route('peserta-assessment.simulations.presentation.submit', $programSimulation), [
         'presentation' => UploadedFile::fake()->create('presentasi.pdf', 500, 'application/pdf'),
-    ])->assertRedirect(route('peserta-assessment.simulations.index'));
+    ])->assertRedirect(route('peserta-assessment.simulations.presentation', $programSimulation));
 
     $submission = SimulationSubmission::firstOrFail();
     Storage::disk('local')->assertExists($submission->storage_path);
     expect($submission->session->status)->toBe('submitted')->and($submission->file_checksum)->toHaveLength(64);
+
+    // Participant can view and present their presentation
+    $this->actingAs($participant)->get(route('peserta-assessment.simulations.presentation', $programSimulation))
+        ->assertOk()->assertSee('Viewer Presentasi Peserta')->assertSee('Mode Layar Penuh');
+    $this->actingAs($participant)->get(route('peserta-assessment.simulations.presentation.preview', $programSimulation))
+        ->assertOk()->assertHeader('content-type', 'application/pdf');
+    $this->actingAs($participant)->get(route('peserta-assessment.simulations.presentation.download', $programSimulation))
+        ->assertDownload('presentasi.pdf');
+
     $this->actingAs($assessor)->get(route('asesor.simulations.show', $programSimulation))->assertOk()->assertSee('presentasi.pdf');
     $this->actingAs($assessor)->get(route('asesor.submissions.preview', $submission))->assertOk()->assertHeader('content-type', 'application/pdf');
     $this->actingAs($assessor)->get(route('asesor.submissions.download', $submission))->assertDownload('presentasi.pdf');

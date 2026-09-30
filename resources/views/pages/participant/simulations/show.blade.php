@@ -32,7 +32,16 @@
         @if ($session?->status === 'in_progress')
             <a href="{{ match($programSimulation->scenario->type->delivery_mode) { 'file_upload' => route('peserta-assessment.simulations.presentation', $programSimulation), 'assessor_observation' => route('peserta-assessment.simulations.lgd-review', $programSimulation), 'case_response' => $programSimulation->scenario->materialPages->isNotEmpty() ? route('peserta-assessment.simulations.material', [$programSimulation, 1]) : route('peserta-assessment.simulations.case-response', $programSimulation), default => route('peserta-assessment.simulations.material', [$programSimulation, 1]) } }}" class="rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600">Lanjutkan</a>
         @elseif ($session?->status === 'submitted')
-            <span class="rounded-lg bg-success-50 px-5 py-2.5 text-sm font-medium text-success-700">Sudah dikumpulkan</span>
+            @if ($programSimulation->scenario->type->delivery_mode === 'file_upload')
+                <a href="{{ route('peserta-assessment.simulations.presentation', $programSimulation) }}" class="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600 shadow-xs">
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect width="18" height="14" x="3" y="3" rx="2"/><path d="M7 21h10M12 17v4"/>
+                    </svg>
+                    <span>Tampilkan Presentasi</span>
+                </a>
+            @else
+                <span class="rounded-lg bg-success-50 px-5 py-2.5 text-sm font-medium text-success-700">Sudah dikumpulkan</span>
+            @endif
         @elseif ($participation->requiresSimulationThreeChoice() && $programSimulation->scenario->type->delivery_mode === 'case_response')
             <span class="rounded-lg bg-warning-50 px-5 py-2.5 text-sm font-medium text-warning-700 dark:bg-warning-500/10 dark:text-warning-400">Menunggu penetapan admin</span>
         @elseif (in_array($programSimulation->scenario->type->delivery_mode, ['multi_page_response', 'file_upload', 'case_response'], true))

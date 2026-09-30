@@ -87,7 +87,11 @@
                                     </span>
                                     <span>{{ $simulation->scenario->duration_minutes }} menit</span>
                                 </div>
-                                <a href="{{ route('peserta-assessment.simulations.show', $simulation) }}" class="{{ $status === 'submitted' ? 'crud-btn-secondary' : ($status === 'in_progress' ? 'inline-flex items-center gap-1 rounded-lg bg-warning-500 px-4 py-2 text-sm font-semibold text-white hover:bg-warning-600 shadow-xs' : 'crud-btn-primary') }}">{{ $status === 'in_progress' ? 'Lanjutkan' : 'Lihat Detail' }} <span aria-hidden="true">→</span></a>
+                                @if($status === 'submitted' && $simulation->scenario->type->delivery_mode === 'file_upload')
+                                    <a href="{{ route('peserta-assessment.simulations.presentation', $simulation) }}" class="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-emerald-700 shadow-xs">Tampilkan Presentasi <span aria-hidden="true">→</span></a>
+                                @else
+                                    <a href="{{ route('peserta-assessment.simulations.show', $simulation) }}" class="{{ $status === 'submitted' ? 'crud-btn-secondary' : ($status === 'in_progress' ? 'inline-flex items-center gap-1 rounded-lg bg-warning-500 px-4 py-2 text-sm font-semibold text-white hover:bg-warning-600 shadow-xs' : 'crud-btn-primary') }}">{{ $status === 'in_progress' ? 'Lanjutkan' : 'Lihat Detail' }} <span aria-hidden="true">→</span></a>
+                                @endif
                             </div>
                         </div>
                     </article>

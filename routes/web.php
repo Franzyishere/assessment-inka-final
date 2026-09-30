@@ -38,6 +38,9 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('role:admin,super_admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/result-archives', [\App\Http\Controllers\Admin\AssessmentResultArchiveController::class, 'index'])->name('result-archives.index');
+        Route::get('/result-archives/{program}', [\App\Http\Controllers\Admin\AssessmentResultArchiveController::class, 'show'])->whereNumber('program')->name('result-archives.show');
+        Route::get('/result-archives/{program}/files/{submission}', [\App\Http\Controllers\Admin\AssessmentResultArchiveController::class, 'file'])->whereNumber('program')->name('result-archives.file');
         Route::get('/invitations', [\App\Http\Controllers\Admin\AssessmentInvitationController::class, 'index'])->name('invitations.index');
         Route::get('/invitations/{assessmentProgram}', [\App\Http\Controllers\Admin\AssessmentInvitationController::class, 'show'])->name('invitations.show');
         Route::post('/invitations/{assessmentProgram}', [\App\Http\Controllers\Admin\AssessmentInvitationController::class, 'send'])->middleware('throttle:10,1')->name('invitations.send');
@@ -58,6 +61,8 @@ Route::middleware('auth')->group(function () {
         Route::put('/assessor-assignments/{assessmentProgram}', [AssessorAssignmentController::class, 'update'])->name('assessor-assignments.update');
         Route::get('/monitoring', [AssessmentMonitoringController::class, 'index'])->name('monitoring.index');
         Route::get('/monitoring/{assessmentProgram}', [AssessmentMonitoringController::class, 'show'])->name('monitoring.show');
+        Route::post('/monitoring/{assessmentProgram}/simulations/{sequence}/start', [AssessmentMonitoringController::class, 'startSimulation'])->name('monitoring.simulations.start');
+        Route::post('/monitoring/{assessmentProgram}/simulations/{sequence}/close', [AssessmentMonitoringController::class, 'closeSimulation'])->name('monitoring.simulations.close');
     });
 
     Route::middleware('role:asesor')->prefix('asesor')->name('asesor.')->group(function () {
@@ -74,6 +79,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/reviews', [SimulationReviewController::class, 'index'])->name('reviews.index');
         Route::get('/reviews/programs/{program}', [SimulationReviewController::class, 'program'])->name('reviews.program');
         Route::get('/reviews/{session}/edit', [SimulationReviewController::class, 'edit'])->name('reviews.edit');
+        Route::get('/reviews/{session}/download', [SimulationReviewController::class, 'download'])->name('reviews.download');
         Route::put('/reviews/{session}', [SimulationReviewController::class, 'update'])->name('reviews.update');
     });
 
@@ -84,6 +90,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/simulations/{programSimulation}/start', [AssessmentSimulationController::class, 'start'])->name('simulations.start');
         Route::get('/simulations/{programSimulation}/material/{page}', [AssessmentSimulationController::class, 'material'])->name('simulations.material');
         Route::get('/simulations/{programSimulation}/materials/{material}/pdf', [AssessmentSimulationController::class, 'materialPdf'])->name('simulations.material.pdf');
+        Route::match(['get', 'put'], '/simulations/{programSimulation}/materials/{material}/highlights', [AssessmentSimulationController::class, 'materialHighlights'])->name('simulations.material.highlights');
         Route::put('/simulations/{programSimulation}/material/{page}', [AssessmentSimulationController::class, 'saveMaterial'])->name('simulations.material.save');
         Route::get('/simulations/{programSimulation}/lgd-review', [AssessmentSimulationController::class, 'lgdReview'])->name('simulations.lgd-review');
         Route::post('/simulations/{programSimulation}/lgd-review/submit', [AssessmentSimulationController::class, 'submitLgd'])->name('simulations.lgd-review.submit');
@@ -91,6 +98,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/simulations/{programSimulation}/events', [AssessmentSimulationController::class, 'recordEvent'])->middleware('throttle:30,1')->name('simulations.events.store');
         Route::get('/simulations/{programSimulation}/presentation', [AssessmentSimulationController::class, 'presentation'])->name('simulations.presentation');
         Route::post('/simulations/{programSimulation}/presentation', [AssessmentSimulationController::class, 'submitPresentation'])->name('simulations.presentation.submit');
+        Route::get('/simulations/{programSimulation}/presentation/preview', [AssessmentSimulationController::class, 'previewPresentation'])->name('simulations.presentation.preview');
+        Route::get('/simulations/{programSimulation}/presentation/download', [AssessmentSimulationController::class, 'downloadPresentation'])->name('simulations.presentation.download');
         Route::get('/simulations/{programSimulation}/case-response', [AssessmentSimulationController::class, 'caseResponse'])->name('simulations.case-response');
         Route::post('/simulations/{programSimulation}/case-response', [AssessmentSimulationController::class, 'submitCaseResponse'])->name('simulations.case-response.submit');
         Route::get('/schedule', fn () => to_route('peserta-assessment.simulations.index'))->name('schedule.index');

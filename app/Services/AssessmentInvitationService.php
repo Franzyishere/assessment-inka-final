@@ -6,6 +6,7 @@ use App\Jobs\SendAssessmentInvitation;
 use App\Mail\AssessmentAccessMail;
 use App\Models\AssessmentInvitation;
 use App\Models\AssessmentParticipant;
+use App\Models\AssessmentProgram;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -24,21 +25,40 @@ class AssessmentInvitationService
         return $mailer;
     }
 
-    public function issue(AssessmentParticipant $participant, int $actorId): AssessmentInvitation
+    public function issue(AssessmentParticipant $participant, int $actorId, bool $automatic = false): ?AssessmentInvitation
     {
         $this->mailer();
 
-        return DB::transaction(function () use ($participant, $actorId) {
+        return DB::transaction(function () use ($participant, $actorId, $automatic) {
+            // Same lock order as program setup/start/archive. Recheck after locking.
+            $program = AssessmentProgram::query()->lockForUpdate()->findOrFail($participant->assessment_program_id);
             $participant = AssessmentParticipant::with('program', 'user')->lockForUpdate()->findOrFail($participant->id);
-            $program = $participant->program;
+            $participant->setRelation('program', $program);
             if (! $program->starts_at || ! in_array($program->status, ['draft', 'active'], true)
                 || $participant->status !== 'assigned' || $participant->user->role !== 'peserta_assessment') {
                 throw ValidationException::withMessages(['invitation' => 'Undangan membutuhkan peserta aktif dan program draft/aktif dengan tanggal pelaksanaan.']);
             }
             $start = $program->starts_at->copy()->timezone(config('assessment_access.timezone'))->startOfDay();
-            $end = $start->copy()->addDay();
+            $closeHour = (int) config('assessment_access.close_hour', 17);
+            $closeMinute = (int) config('assessment_access.close_minute', 0);
+            $end = $start->copy()->setTime($closeHour, $closeMinute, 0);
             if (now()->gte($end)) {
-                throw ValidationException::withMessages(['invitation' => 'Hari pelaksanaan sudah berlalu. Periksa jadwal program.']);
+                throw ValidationException::withMessages(['invitation' => 'Hari pelaksanaan sudah berlalu atau telah melewati batas waktu assessment (17.00 WIB).']);
+            }
+            if ($automatic) {
+                if (! $program->auto_send_invitations || now()->lt($program->starts_at->copy()->subMinutes(10))) {
+                    return null;
+                }
+                $existing = $participant->invitation()->lockForUpdate()->first();
+                // Never undo an intentional revocation or rotate a current invitation.
+                // Failed delivery is retried by the job, then requires explicit admin resend.
+                if ($existing && ($existing->revoked_at || (
+                    $existing->valid_from->equalTo($start)
+                    && $existing->expires_at->equalTo($end)
+                    && strcasecmp($existing->email, $participant->user->email) === 0
+                ))) {
+                    return null;
+                }
             }
             $token = Str::random(64);
             $invitation = AssessmentInvitation::updateOrCreate(['assessment_participant_id' => $participant->id], [
@@ -51,6 +71,7 @@ class AssessmentInvitationService
                 'sent_by' => $actorId,
             ]);
             $invitation->challenges()->whereNull('consumed_at')->update(['invalidated_at' => now()]);
+            $invitation->deliveries()->where('kind', 'invitation')->where('status', 'queued')->update(['status' => 'cancelled']);
             $delivery = $invitation->deliveries()->create(['kind' => 'invitation']);
             SendAssessmentInvitation::dispatch($invitation->id, $delivery->id, $token)->afterCommit();
 
@@ -67,10 +88,36 @@ class AssessmentInvitationService
         });
     }
 
+    public static function generateOtpCode(int $length = 8, int $letterCount = 3): string
+    {
+        $letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $numbers = '0123456789';
+
+        $digitCount = max(0, $length - $letterCount);
+
+        $characters = [];
+        for ($i = 0; $i < $letterCount; $i++) {
+            $characters[] = $letters[random_int(0, strlen($letters) - 1)];
+        }
+        for ($i = 0; $i < $digitCount; $i++) {
+            $characters[] = $numbers[random_int(0, strlen($numbers) - 1)];
+        }
+
+        // Cryptographically secure Fisher-Yates shuffle
+        for ($i = count($characters) - 1; $i > 0; $i--) {
+            $j = random_int(0, $i);
+            $temp = $characters[$i];
+            $characters[$i] = $characters[$j];
+            $characters[$j] = $temp;
+        }
+
+        return implode('', $characters);
+    }
+
     public function sendOtp(AssessmentInvitation $invitation, string $email, string $browserSecret): void
     {
         $mailer = $this->mailer();
-        $code = (string) random_int(100000, 999999);
+        $code = self::generateOtpCode(8, 3);
         $version = $invitation->token_hash;
         $payload = DB::transaction(function () use ($invitation, $email, $browserSecret, $code, $version) {
             $invitation = AssessmentInvitation::with('participant.program', 'participant.user')->lockForUpdate()->findOrFail($invitation->id);
@@ -117,6 +164,7 @@ class AssessmentInvitationService
     public function verify(AssessmentInvitation $invitation, string $code, string $browserSecret): ?AssessmentInvitation
     {
         $version = $invitation->token_hash;
+        $code = strtoupper(trim($code));
 
         return DB::transaction(function () use ($invitation, $code, $browserSecret, $version) {
             $invitation = AssessmentInvitation::with('participant.user', 'participant.program')->lockForUpdate()->findOrFail($invitation->id);

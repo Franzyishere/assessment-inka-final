@@ -24,7 +24,7 @@ class AssessmentSimulationController extends Controller
 {
     public function index(Request $request): View
     {
-        AssessmentProgram::activateDuePrograms();
+        AssessmentProgram::syncLifecycle();
 
         $participations = AssessmentParticipant::query()
             ->when($request->attributes->get('assessment_invitation'), fn ($query, $invitation) => $query->whereKey($invitation->assessment_participant_id))
@@ -107,7 +107,7 @@ class AssessmentSimulationController extends Controller
                         && Storage::disk('local')->exists($material->attachment_path), 422, 'Materi PDF belum siap. Hubungi admin.');
                 }
             }
-            abort_unless($this->isAvailable($programSimulation), 403, 'Simulasi belum tersedia atau sudah ditutup.');
+            abort_unless($this->isAvailable($programSimulation), 403, $programSimulation->status === AssessmentProgramSimulation::STATUS_SCHEDULED && ! $programSimulation->isAlwaysOpen() ? 'Simulasi ini belum dimulai oleh Admin. Harap tunggu instruksi Admin.' : 'Simulasi belum tersedia atau sudah ditutup.');
             abort_unless(in_array($programSimulation->scenario->type->delivery_mode, ['multi_page_response', 'file_upload', 'case_response', 'assessor_observation'], true), 403, 'Flow simulasi ini belum tersedia.');
 
             if ($programSimulation->scenario->type->delivery_mode === 'assessor_observation') {
@@ -180,18 +180,32 @@ class AssessmentSimulationController extends Controller
     public function presentation(Request $request, AssessmentProgramSimulation $programSimulation): View
     {
         [$participation, $programSimulation] = $this->resolveAssignment($request, $programSimulation);
-        $session = $this->activeSession($programSimulation, $participation);
         abort_unless($programSimulation->scenario->type->delivery_mode === 'file_upload', 404);
 
-        return view('pages.participant.simulations.presentation', compact('programSimulation', 'session') + [
-            'title' => 'Upload Presentasi',
+        $session = $this->session($programSimulation, $participation);
+        if (! $session) {
+            abort_unless($programSimulation->isAvailableForParticipant(), 403, 'Sesi belum dibuka oleh admin.');
+            $session = SimulationSession::create([
+                'assessment_program_simulation_id' => $programSimulation->id,
+                'assessment_participant_id' => $participation->id,
+                'started_at' => now(),
+                'expires_at' => now()->addMinutes($programSimulation->scenario->duration_minutes),
+                'status' => 'in_progress',
+            ]);
+        }
+
+        $submission = $session->submissions()->latest('id')->first();
+
+        return view('pages.participant.simulations.presentation', compact('programSimulation', 'session', 'submission') + [
+            'title' => $submission ? 'Tampilan Presentasi' : 'Upload Presentasi',
         ]);
     }
 
     public function submitPresentation(Request $request, AssessmentProgramSimulation $programSimulation): RedirectResponse
     {
         [$participation, $programSimulation] = $this->resolveAssignment($request, $programSimulation);
-        $session = $this->activeSession($programSimulation, $participation);
+        $session = $this->session($programSimulation, $participation);
+        abort_unless($session && $session->status === 'in_progress', 403, 'Sesi presentasi tidak aktif.');
         abort_unless($programSimulation->scenario->type->delivery_mode === 'file_upload', 404);
         $validated = $request->validate([
             'presentation' => ['required', 'file', 'max:25600', 'mimes:pdf'],
@@ -217,7 +231,36 @@ class AssessmentSimulationController extends Controller
         ]);
         $session->update(['status' => 'submitted', 'submitted_at' => now()]);
 
-        return to_route('peserta-assessment.simulations.index')->with('success', 'File presentasi berhasil dikumpulkan.');
+        return to_route('peserta-assessment.simulations.presentation', $programSimulation)->with('success', 'File presentasi berhasil dikumpulkan dan siap dipresentasikan.');
+    }
+
+    public function previewPresentation(Request $request, AssessmentProgramSimulation $programSimulation)
+    {
+        [$participation, $programSimulation] = $this->resolveAssignment($request, $programSimulation);
+        $session = $this->session($programSimulation, $participation);
+        abort_unless($session, 404);
+        $submission = $session->submissions()->latest('id')->first();
+        abort_unless($submission && $submission->mime_type === 'application/pdf' && $submission->storage_path && Storage::disk('local')->exists($submission->storage_path), 404);
+
+        return Storage::disk('local')->response(
+            $submission->storage_path,
+            $submission->original_filename,
+            [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline',
+            ]
+        );
+    }
+
+    public function downloadPresentation(Request $request, AssessmentProgramSimulation $programSimulation)
+    {
+        [$participation, $programSimulation] = $this->resolveAssignment($request, $programSimulation);
+        $session = $this->session($programSimulation, $participation);
+        abort_unless($session, 404);
+        $submission = $session->submissions()->latest('id')->first();
+        abort_unless($submission && $submission->storage_path && Storage::disk('local')->exists($submission->storage_path), 404);
+
+        return Storage::disk('local')->download($submission->storage_path, $submission->original_filename);
     }
 
     public function material(Request $request, AssessmentProgramSimulation $programSimulation, int $page): View
@@ -237,6 +280,7 @@ class AssessmentSimulationController extends Controller
             'session' => $session,
             'materials' => $pages->values(),
             'responses' => $responses,
+            'diagrams' => $submission?->diagrams ?? [],
             'material' => $pages->values()->get($page - 1),
             'pageNumber' => $page,
             'pageCount' => $pages->count(),
@@ -246,59 +290,76 @@ class AssessmentSimulationController extends Controller
 
     public function saveMaterial(Request $request, AssessmentProgramSimulation $programSimulation, int $page): RedirectResponse|JsonResponse
     {
-        [$participation, $programSimulation] = $this->resolveAssignment($request, $programSimulation);
-        $session = $this->activeSession($programSimulation, $participation);
-        $pages = $programSimulation->scenario->materialPages;
-        abort_unless(in_array($programSimulation->scenario->type->delivery_mode, ['multi_page_response', 'case_response'], true) && $page >= 1 && $page <= $pages->count(), 404);
+        return DB::transaction(function () use ($request, $programSimulation, $page) {
+            [$participation, $programSimulation] = $this->resolveAssignment($request, $programSimulation);
+            $session = $this->activeSession($programSimulation, $participation);
+            $session = SimulationSession::whereKey($session->id)->lockForUpdate()->firstOrFail();
+            abort_unless($session->status === 'in_progress' && (! $session->expires_at || $session->expires_at->isFuture()), 403);
+            $draft = $request->boolean('draft_only');
+            $pages = $programSimulation->scenario->materialPages;
+            abort_unless(in_array($programSimulation->scenario->type->delivery_mode, ['multi_page_response', 'case_response'], true) && $page >= 1 && $page <= $pages->count(), 404);
 
-        $material = $pages->values()->get($page - 1);
-        $validated = $request->validate(['response' => [$material->is_required ? 'required' : 'nullable', 'string', 'max:100000']]);
-        $sanitizedResponse = RichTextSanitizer::sanitize($validated['response'] ?? '');
-        if ($material->is_required && blank(trim(html_entity_decode(strip_tags($sanitizedResponse))))) {
-            return back()->withInput()->withErrors(['response' => 'Jawaban wajib diisi sebelum disimpan.']);
-        }
-        $submission = $session->submissions()->firstOrNew(['revision' => 1]);
-        $responses = json_decode($submission->response_text ?? '{}', true) ?: [];
-        $responses[$page] = $sanitizedResponse;
-        $submission->response_text = json_encode($responses, JSON_UNESCAPED_UNICODE);
-        $submission->save();
+            $material = $pages->values()->get($page - 1);
+            $validated = $request->validate([
+                'response' => [$material->is_required && ! $draft ? 'required' : 'nullable', 'string', 'max:1000000'],
+                'draft_only' => ['sometimes', 'boolean'],
+                'diagram' => ['nullable', 'string', 'max:500000'],
+            ]);
+            $diagram = \App\Support\AnswerDiagram::parse($validated['diagram'] ?? null);
+            $sanitizedResponse = RichTextSanitizer::sanitize($validated['response'] ?? '');
+            if (! $draft && $material->is_required && ! RichTextSanitizer::hasAnswer($sanitizedResponse)) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['response' => 'Jawaban wajib diisi sebelum disimpan.']);
+            }
+            $submission = $session->submissions()->firstOrNew(['revision' => 1]);
+            $responses = json_decode($submission->response_text ?? '{}', true) ?: [];
+            $responses[$page] = $sanitizedResponse;
+            $submission->response_text = json_encode($responses, JSON_UNESCAPED_UNICODE);
+            if ($request->has('diagram')) {
+                $diagrams = $submission->diagrams ?? [];
+                $diagrams[$page] = $diagram;
+                $submission->diagrams = $diagrams;
+            }
+            $submission->save();
 
-        if ($request->boolean('submit_after_save')) {
-            abort_unless($page === $pages->count(), 422, 'Aksi simpan dan kumpulkan hanya tersedia pada materi terakhir.');
+            if ($draft) return response()->json(['message' => 'Draft tersimpan.', 'draft_saved' => true]);
 
-            $missingPage = $pages->values()->first(
-                fn ($pageMaterial, $index) => $pageMaterial->is_required
-                    && blank(trim(html_entity_decode(strip_tags($responses[$index + 1] ?? ''))))
-            );
+            if ($request->boolean('submit_after_save')) {
+                abort_unless($page === $pages->count(), 422, 'Aksi simpan dan kumpulkan hanya tersedia pada materi terakhir.');
 
-            if ($missingPage) {
-                $missingPageNumber = $pages->values()->search(
-                    fn ($pageMaterial) => $pageMaterial->is($missingPage)
-                ) + 1;
+                $missingPage = $pages->values()->first(
+                    fn ($pageMaterial, $index) => $pageMaterial->is_required
+                        && ! RichTextSanitizer::hasAnswer($responses[$index + 1] ?? '')
+                );
 
-                return redirect()
-                    ->route('peserta-assessment.simulations.material', [$programSimulation, $missingPageNumber])
-                    ->withErrors(['response' => 'Materi wajib ini harus dijawab sebelum simulasi dikumpulkan.']);
+                if ($missingPage) {
+                    $missingPageNumber = $pages->values()->search(
+                        fn ($pageMaterial) => $pageMaterial->is($missingPage)
+                    ) + 1;
+
+                    return redirect()
+                        ->route('peserta-assessment.simulations.material', [$programSimulation, $missingPageNumber])
+                        ->withErrors(['response' => 'Materi wajib ini harus dijawab sebelum simulasi dikumpulkan.']);
+                }
+
+                $session->update(['status' => 'submitted', 'submitted_at' => now()]);
+                $submission->update(['submitted_at' => now()]);
+
+                return to_route('peserta-assessment.simulations.index')
+                    ->with('success', 'Jawaban berhasil disimpan dan simulasi telah dikumpulkan. Jawaban tidak dapat diubah kembali.');
             }
 
-            $session->update(['status' => 'submitted', 'submitted_at' => now()]);
-            $submission->update(['submitted_at' => now()]);
+            $nextPage = min($page + 1, $pages->count());
 
-            return to_route('peserta-assessment.simulations.index')
-                ->with('success', 'Jawaban berhasil disimpan dan simulasi telah dikumpulkan. Jawaban tidak dapat diubah kembali.');
-        }
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Jawaban tersimpan.',
+                    'next_page' => $nextPage,
+                    'next_url' => route('peserta-assessment.simulations.material', [$programSimulation, $nextPage]),
+                ]);
+            }
 
-        $nextPage = min($page + 1, $pages->count());
-
-        if ($request->expectsJson()) {
-            return response()->json([
-                'message' => 'Jawaban tersimpan.',
-                'next_page' => $nextPage,
-                'next_url' => route('peserta-assessment.simulations.material', [$programSimulation, $nextPage]),
-            ]);
-        }
-
-        return redirect()->route('peserta-assessment.simulations.material', [$programSimulation, $nextPage])->with('success', 'Jawaban tersimpan.');
+            return redirect()->route('peserta-assessment.simulations.material', [$programSimulation, $nextPage])->with('success', 'Jawaban tersimpan.');
+        });
     }
 
     public function submit(Request $request, AssessmentProgramSimulation $programSimulation): RedirectResponse
@@ -312,7 +373,7 @@ class AssessmentSimulationController extends Controller
             $responses = json_decode($submission->response_text ?? '{}', true) ?: [];
             $missingPage = $programSimulation->scenario->materialPages
                 ->first(fn ($material, $index) => $material->is_required
-                    && blank($responses[$index + 1] ?? null));
+                    && ! RichTextSanitizer::hasAnswer($responses[$index + 1] ?? ''));
 
             if ($missingPage) {
                 $pageNumber = $programSimulation->scenario->materialPages->search(
@@ -329,6 +390,38 @@ class AssessmentSimulationController extends Controller
         $submission->update(['submitted_at' => now()]);
 
         return to_route('peserta-assessment.simulations.index')->with('success', 'Simulasi berhasil dikumpulkan.');
+    }
+
+    public function materialHighlights(Request $request, AssessmentProgramSimulation $programSimulation, SimulationMaterialPage $material)
+    {
+        [$participation, $programSimulation] = $this->resolveAssignment($request, $programSimulation);
+        $session = $this->activeSession($programSimulation, $participation);
+        abort_unless($material->simulation_scenario_id === $programSimulation->simulation_scenario_id, 404);
+        if ($request->isMethod('get')) {
+            return response()->json(['highlights' => $session->material_highlights[$material->id] ?? []])
+                ->header('Cache-Control', 'private, no-store');
+        }
+        $data = $request->validate([
+            'highlights' => ['present', 'array', 'max:2000'],
+            'highlights.*' => ['array:page,x,y,width,height'],
+            'highlights.*.page' => ['required', 'integer', 'min:1', 'max:5000'],
+            'highlights.*.x' => ['required', 'numeric', 'between:0,1'],
+            'highlights.*.y' => ['required', 'numeric', 'between:0,1'],
+            'highlights.*.width' => ['required', 'numeric', 'gt:0', 'max:1'],
+            'highlights.*.height' => ['required', 'numeric', 'gt:0', 'max:1'],
+        ]);
+        foreach ($data['highlights'] as $highlight) {
+            abort_if($highlight['x'] + $highlight['width'] > 1.001 || $highlight['y'] + $highlight['height'] > 1.001, 422, 'Posisi highlight tidak valid.');
+        }
+        DB::transaction(function () use ($session, $material, $data) {
+            $locked = SimulationSession::whereKey($session->id)->lockForUpdate()->firstOrFail();
+            abort_unless($locked->status === 'in_progress' && (! $locked->expires_at || $locked->expires_at->isFuture()), 403);
+            $highlights = $locked->material_highlights ?? [];
+            $highlights[$material->id] = $data['highlights'];
+            $locked->material_highlights = $highlights;
+            $locked->save();
+        });
+        return response()->json(['saved' => true]);
     }
 
     public function materialPdf(Request $request, AssessmentProgramSimulation $programSimulation, SimulationMaterialPage $material)
@@ -367,9 +460,11 @@ class AssessmentSimulationController extends Controller
             ->firstOrFail();
         $sourceSession = $this->session($sourceSimulation, $participation);
         abort_unless($sourceSession?->status === 'submitted', 403, 'Simulasi 1 harus dikumpulkan sebelum materi LGD dapat direview.');
-        $responses = json_decode($sourceSession->submissions()->where('revision', 1)->value('response_text') ?? '{}', true) ?: [];
+        $sourceSubmission = $sourceSession->submissions()->where('revision', 1)->first();
+        $responses = json_decode($sourceSubmission?->response_text ?? '{}', true) ?: [];
+        $diagrams = $sourceSubmission?->diagrams ?? [];
 
-        return view('pages.participant.simulations.lgd-review', compact('programSimulation', 'sourceSimulation', 'responses', 'session') + [
+        return view('pages.participant.simulations.lgd-review', compact('programSimulation', 'sourceSimulation', 'responses', 'diagrams', 'session') + [
             'title' => 'Leaderless Group Discussion',
         ]);
     }
@@ -445,6 +540,7 @@ class AssessmentSimulationController extends Controller
 
     private function activeSession(AssessmentProgramSimulation $programSimulation, AssessmentParticipant $participation): SimulationSession
     {
+        abort_unless($programSimulation->isAvailableForParticipant(), 403, 'Sesi ditutup oleh admin. Jawaban yang sudah tersimpan tetap tersedia.');
         if ($programSimulation->scenario->usesSharedSimulationThreeMaterial()) {
             abort_unless($participation->simulationThreePackageKey() === $programSimulation->scenario->simulation_package, 403);
         }
@@ -460,11 +556,6 @@ class AssessmentSimulationController extends Controller
 
     private function isAvailable(AssessmentProgramSimulation $programSimulation): bool
     {
-        return $programSimulation->program->status === 'active'
-            && in_array($programSimulation->scenario->status, ['active', 'published'], true)
-            && $programSimulation->scenario->type->is_active
-            && $programSimulation->status === 'scheduled'
-            && (! $programSimulation->opens_at || $programSimulation->opens_at->isPast())
-            && (! $programSimulation->closes_at || $programSimulation->closes_at->isFuture());
+        return $programSimulation->isAvailableForParticipant();
     }
 }
