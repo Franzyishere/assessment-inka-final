@@ -55,15 +55,16 @@
     </section>
 
     <section class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
-        <label class="flex cursor-pointer items-start gap-3">
-            <input type="checkbox" name="auto_send_invitations" value="1" @checked(old('auto_send_invitations', $program->auto_send_invitations ?? true)) class="mt-0.5 size-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500">
-            <div>
-                <span class="block text-sm font-semibold text-gray-800 dark:text-white/90">Kirim email undangan otomatis ke peserta</span>
-                <span class="block text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                    Undangan akan otomatis dikirim <strong>10 menit sebelum program aktif</strong>. Jika program sudah aktif atau waktu mulai kurang dari 10 menit lagi, undangan akan langsung dikirim saat pengaturan disimpan. Peserta lama yang sudah pernah diundang tidak akan dikirimi ulang.
-                </span>
-            </div>
-        </label>
+        <h3 class="text-sm font-semibold text-gray-800 dark:text-white/90">Undangan Peserta</h3>
+        <p class="mt-1 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
+            @if ($program->archived_at)
+                Program telah diarsipkan. Pengiriman undangan otomatis tidak berjalan.
+            @elseif ($program->auto_send_invitations)
+                Undangan diproses otomatis mulai <strong>10 menit sebelum jadwal pelaksanaan</strong>. Peserta yang ditambahkan setelah waktu tersebut akan diproses selama akses masih berlaku. Pantau status pengiriman di menu Undangan.
+            @else
+                Program lama ini menggunakan pengiriman manual. Kirim undangan melalui menu Undangan setelah data peserta dan jadwal diperiksa.
+            @endif
+        </p>
     </section>
 
     @if ($errors->any())<div class="rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">Pengaturan belum tersimpan. Periksa kembali pilihan yang ditandai.</div>@endif

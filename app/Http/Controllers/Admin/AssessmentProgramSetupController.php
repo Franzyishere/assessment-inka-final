@@ -136,8 +136,8 @@ class AssessmentProgramSetupController extends Controller
                 throw ValidationException::withMessages(['assessor_ids' => 'Asesor yang sudah memiliki penilaian tidak dapat dilepas dari tim program.']);
             }
 
-            $autoSend = $request->boolean('auto_send_invitations', true);
-            $assessmentProgram->update(['auto_send_invitations' => $autoSend]);
+            // Server-managed: preserve historical opt-outs without exposing a toggle.
+            $autoSend = $assessmentProgram->auto_send_invitations;
 
             DB::transaction(function () use ($request, $assessmentProgram, $catalog, $scenarioIds, $participantIds, $assessorIds, $data, $upgradingMaterials, $simulationThreePackages): void {
                 $assessmentProgram->simulations()->whereNotIn('simulation_scenario_id', $scenarioIds)->delete();

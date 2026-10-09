@@ -111,7 +111,6 @@ test('followup participant receives invitation immediately while existing partic
             $followupUser->id => 'grade_1_to_2',
         ],
         'assessor_ids' => [$assessor->id],
-        'auto_send_invitations' => '1',
     ])->assertRedirect(route('admin.assessment-programs.index'))
       ->assertSessionHas('success', fn ($msg) => str_contains($msg, '1 undangan masuk antrean pengiriman'));
 
@@ -123,20 +122,21 @@ test('followup participant receives invitation immediately while existing partic
     expect($followupParticipant->invitation)->not->toBeNull();
 });
 
-test('unchecking auto_send_invitations prevents automatic sending', function () {
+test('legacy manual programs stay manual when setup is saved', function (array $extra) {
     extract(setupProgramFixture([
         'status' => 'active',
         'starts_at' => now()->setTime(9, 0),
+        'auto_send_invitations' => false,
     ]));
 
     $user = User::factory()->create(['role' => User::ROLE_PESERTA_ASSESSMENT, 'email' => 'manual@example.test']);
 
-    // Admin saves setup with auto_send_invitations = 0
+    // A client cannot re-enable a historical opt-out through setup payloads.
     $this->actingAs($admin)->put(route('admin.assessment-programs.setup.update', $program), [
         'participant_ids' => [$user->id],
         'participant_categories' => [$user->id => 'grade_1_to_2'],
         'assessor_ids' => [$assessor->id],
-        'auto_send_invitations' => '0',
+        ...$extra,
     ])->assertRedirect(route('admin.assessment-programs.index'));
 
     expect($program->fresh()->auto_send_invitations)->toBeFalse();
@@ -147,4 +147,49 @@ test('unchecking auto_send_invitations prevents automatic sending', function () 
     // Running the command also respects the false flag
     $this->artisan('assessment:send-due-invitations')->expectsOutput('Tidak ada undangan assessment yang jatuh tempo untuk dikirimkan.')->assertSuccessful();
     expect($participant->fresh()->invitation)->toBeNull();
+})->with([ 'no toggle' => [[]], 'forged toggle' => [['auto_send_invitations' => '1']] ]);
+
+test('new programs always enable automatic invitations without a checkbox', function () {
+    $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+    $this->actingAs($admin)->post(route('admin.assessment-programs.store'), [
+        'name' => 'Program Baru Otomatis', 'status' => 'draft',
+        'starts_at' => now()->setTime(10, 0)->toDateTimeString(),
+        'ends_at' => now()->setTime(16, 0)->toDateTimeString(),
+        'auto_send_invitations' => '0',
+    ])->assertRedirect(route('admin.assessment-programs.index'))->assertSessionHasNoErrors();
+    $program = AssessmentProgram::where('name', 'Program Baru Otomatis')->firstOrFail();
+    expect($program->auto_send_invitations)->toBeTrue();
+    $this->actingAs($admin)->get(route('admin.assessment-programs.setup.edit', $program))
+        ->assertOk()->assertDontSee('name="auto_send_invitations"', false)
+        ->assertSee('Undangan diproses otomatis');
+});
+
+test('setup cannot disable automatic sending and repeat scheduling does not duplicate invitations', function () {
+    extract(setupProgramFixture(['starts_at' => now()->subMinutes(5)]));
+    $user = User::factory()->create(['role' => User::ROLE_PESERTA_ASSESSMENT]);
+    $this->actingAs($admin)->put(route('admin.assessment-programs.setup.update', $program), [
+        'participant_ids' => [$user->id],
+        'participant_categories' => [$user->id => 'grade_1_to_2'],
+        'assessor_ids' => [$assessor->id], 'auto_send_invitations' => '0',
+    ])->assertSessionHasNoErrors()->assertRedirect();
+    expect($program->fresh()->auto_send_invitations)->toBeTrue();
+    $invitation = $program->participants()->firstOrFail()->invitation;
+    expect($invitation)->not->toBeNull();
+    $token = $invitation->token_hash;
+    expect(AssessmentProgram::sendDueInvitations())->toBe(0);
+    expect($invitation->fresh()->token_hash)->toBe($token);
+    expect($invitation->deliveries()->where('kind', 'invitation')->count())->toBe(1);
+});
+
+test('archived programs never receive automatic invitations', function () {
+    extract(setupProgramFixture(['starts_at' => now()->subMinutes(5)]));
+    $program->forceFill(['archived_at' => now()])->save();
+    $user = User::factory()->create(['role' => User::ROLE_PESERTA_ASSESSMENT]);
+    $participant = AssessmentParticipant::create([
+        'assessment_program_id' => $program->id, 'user_id' => $user->id,
+        'status' => 'assigned', 'assessment_category' => 'grade_1_to_2',
+    ]);
+    expect(AssessmentProgram::sendDueInvitations())->toBe(0);
+    expect(app(AssessmentInvitationService::class)->issue($participant, $admin->id, automatic: true))->toBeNull();
+    Queue::assertNothingPushed();
 });

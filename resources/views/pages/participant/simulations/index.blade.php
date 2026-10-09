@@ -55,11 +55,16 @@
                         $theme = $themes[$seq] ?? $themes[1];
                         $session = $participation->sessions->firstWhere('assessment_program_simulation_id', $simulation->id);
                         $status = $session?->status ?? 'not_started';
-                        $statusLabel = match($status) { 'submitted' => 'Selesai', 'in_progress' => 'Sedang Dikerjakan', default => 'Belum Dimulai' };
+                        $isAvailable = $simulation->isAvailableForParticipant();
+                        $statusLabel = match($status) {
+                            'submitted' => 'Selesai',
+                            'in_progress' => 'Sedang Dikerjakan',
+                            default => ($isAvailable ? 'Siap Dikerjakan' : 'Menunggu Admin'),
+                        };
                         $statusClass = match($status) {
                             'submitted' => 'bg-emerald-100/90 text-emerald-800 border border-emerald-200',
                             'in_progress' => 'bg-amber-100/90 text-amber-800 border border-amber-300 font-bold animate-pulse',
-                            default => 'bg-white/90 text-gray-600 border border-gray-200'
+                            default => ($isAvailable ? 'bg-blue-100/90 text-blue-800 border border-blue-200 font-medium' : 'bg-amber-50/90 text-amber-700 border border-amber-200/80 font-medium')
                         };
                     @endphp
                     <article class="relative flex flex-col justify-between overflow-hidden rounded-2xl border p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-theme-md {{ $theme['card'] }} {{ $status === 'in_progress' ? 'ring-2 ring-amber-400/50' : '' }}">

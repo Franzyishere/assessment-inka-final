@@ -46,7 +46,7 @@ class AssessmentInvitationService
                 throw ValidationException::withMessages(['invitation' => 'Hari pelaksanaan sudah berlalu atau telah melewati batas waktu assessment (17.00 WIB).']);
             }
             if ($automatic) {
-                if (! $program->auto_send_invitations || now()->lt($program->starts_at->copy()->subMinutes(10))) {
+                if ($program->archived_at || ! $program->auto_send_invitations || now()->lt($program->starts_at->copy()->subMinutes(10))) {
                     return null;
                 }
                 $existing = $participant->invitation()->lockForUpdate()->first();

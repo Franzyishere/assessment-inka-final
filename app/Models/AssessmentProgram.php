@@ -64,6 +64,7 @@ class AssessmentProgram extends Model
     public static function sendDueInvitations(): int
     {
         $programs = static::query()
+            ->whereNull('archived_at')
             ->where('auto_send_invitations', true)
             ->whereIn('status', ['draft', 'active'])
             ->whereNotNull('starts_at')

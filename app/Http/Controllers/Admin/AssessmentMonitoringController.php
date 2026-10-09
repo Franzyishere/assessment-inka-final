@@ -16,7 +16,7 @@ class AssessmentMonitoringController extends Controller
         $programs = AssessmentProgram::query()
             ->withCount(['participants', 'simulations'])
             ->when($request->filled('search'), fn ($query) => $query->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower(trim((string) $request->query('search'))).'%']))
-            ->orderByDesc('starts_at')->orderBy('name')->orderBy('id')->paginate(12)->withQueryString();
+            ->orderByDesc('created_at')->orderByDesc('id')->paginate(12)->withQueryString();
 
         return view('pages.admin.monitoring.index', ['title' => 'Monitoring Assessment', 'programs' => $programs]);
     }

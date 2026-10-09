@@ -30,7 +30,8 @@ class SimulationScenarioController extends Controller
             $matchingTypeIds = $simulationTypes->filter(fn ($type) => str_contains(mb_strtolower($type->name.' '.$type->description), $search))->pluck('id');
             $scenarios = $scenarios->filter(fn ($scenario) => $matchingTypeIds->contains($scenario->simulation_type_id)
                 || str_contains(mb_strtolower($scenario->simulationThreePackageLabel() ?? ''), $search)
-                || str_contains(mb_strtolower($scenario->title ?? ''), $search))->values();
+                || str_contains(mb_strtolower($scenario->title ?? ''), $search)
+                || $scenario->materialPages->contains(fn ($page) => str_contains(mb_strtolower($page->attachment_name ?? ''), $search)))->values();
             $simulationTypes = $simulationTypes->whereIn('id', $scenarios->pluck('simulation_type_id')->unique())->values();
         }
 

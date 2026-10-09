@@ -251,6 +251,7 @@
   .crud-btn,
   .crud-btn-primary,
   .crud-btn-secondary,
+  .crud-btn-success,
   .crud-btn-danger,
   .crud-btn-soft-brand,
   .crud-btn-soft-neutral,
@@ -267,7 +268,11 @@
   }
 
   .crud-btn-danger {
-    @apply bg-error-500 text-white hover:bg-error-600 focus-visible:ring-error-500/20;
+    @apply bg-error-600 text-white hover:bg-error-600 focus-visible:ring-error-500/20;
+  }
+
+  .crud-btn-success {
+    @apply bg-success-600 text-white hover:bg-success-700 focus-visible:ring-success-500/20;
   }
 
   .crud-btn-sm,

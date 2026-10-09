@@ -24,6 +24,23 @@
 /vendor
 /exports
 /scripts
+# Local project documents and diagram deliverables (not application assets).
+/docs/
+/documents/
+/documentation/
+*.drawio
+*.drawio.bkp
+*.doc
+*.docx
+*.odt
+*.ppt
+*.pptx
+*.pdf
+# Keep application assets and test fixtures eligible for version control.
+!/public/**/*.pdf
+!/resources/**/*.pdf
+!/tests/**/*.pdf
+# README.md and LICENSE describe the repository and remain tracked.
 Homestead.json
 Homestead.yaml
 Thumbs.db

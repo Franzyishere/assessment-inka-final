@@ -67,5 +67,19 @@
         </div>
     </div>
 
-    <div class="flex flex-wrap justify-end gap-3"><a href="{{ route('admin.simulations.index') }}" class="crud-btn-secondary">Batal</a><button class="crud-btn-primary">Simpan Materi</button></div>
+    <div x-show="!usesPdfMaterials" class="rounded-2xl border border-blue-200 bg-blue-50/70 p-5 md:p-6 dark:border-blue-900/30 dark:bg-blue-900/10">
+        <div class="flex items-start gap-3">
+            <svg class="size-5 shrink-0 text-blue-600 dark:text-blue-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+                <h3 class="text-sm font-semibold text-blue-900 dark:text-blue-200">Informasi Alur Simulasi</h3>
+                <p class="mt-1 text-sm text-blue-700 dark:text-blue-300 leading-relaxed">
+                    Simulasi ini berjenis <strong>Unggah Mandiri Peserta (File Upload)</strong>. Anda tidak perlu mengunggah materi soal di sini karena file presentasi akan diunggah secara mandiri oleh peserta pada saat sesi asesmen berlangsung untuk dinilai oleh Asesor.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex flex-wrap justify-end gap-3"><a href="{{ route('admin.simulations.index') }}" class="crud-btn-secondary">Batal</a><button class="crud-btn-primary" x-text="usesPdfMaterials ? 'Simpan Materi' : 'Simpan Pengaturan'">Simpan Materi</button></div>
 </form>

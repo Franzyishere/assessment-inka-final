@@ -38,11 +38,20 @@
                 </div>
                 <h3 class="text-sm font-semibold text-gray-900">{{ $name }}</h3>
                 @if($first)
-                    <form class="mt-auto" method="POST" action="{{ route($opened ? 'admin.monitoring.simulations.close' : 'admin.monitoring.simulations.start', [$program, $seq]) }}"
-                        x-data @submit.prevent="$dispatch('confirm-dialog', { title: '{{ $opened ? 'Tutup sesi?' : 'Buka sesi?' }}', message: '{{ $opened ? 'Akses pengerjaan dan penyimpanan baru dihentikan. Jawaban tersimpan tetap dipertahankan.' : 'Peserta dapat mengakses simulasi. Timer sesi yang sudah dimulai tidak direset.' }}', confirmLabel: '{{ $opened ? 'Tutup Sesi' : 'Buka Sesi' }}', tone: '{{ $opened ? 'danger' : 'brand' }}', onConfirm: () => $el.submit() })">
-                        @csrf
-                        <button type="submit" class="crud-btn-secondary !h-9 w-full justify-center {{ $opened ? '!text-error-700' : '' }}">{{ $opened ? 'Tutup Sesi' : ($closed ? 'Buka Kembali' : 'Mulai Simulasi') }}</button>
-                    </form>
+                    @php
+                        $canToggle = $program->status === 'active' && ! $program->archived_at && ! $program->ends_at?->isPast();
+                    @endphp
+                    @if($canToggle)
+                        <form class="mt-auto" method="POST" action="{{ route($opened ? 'admin.monitoring.simulations.close' : 'admin.monitoring.simulations.start', [$program, $seq]) }}"
+                            x-data @submit.prevent="$dispatch('confirm-dialog', { title: '{{ $opened ? 'Tutup sesi?' : 'Buka sesi?' }}', message: '{{ $opened ? 'Akses pengerjaan dan penyimpanan baru dihentikan. Jawaban tersimpan tetap dipertahankan.' : 'Peserta dapat mengakses simulasi. Timer sesi yang sudah dimulai tidak direset.' }}', confirmLabel: '{{ $opened ? 'Tutup Sesi' : 'Buka Sesi' }}', tone: '{{ $opened ? 'danger' : 'brand' }}', onConfirm: () => $el.submit() })">
+                            @csrf
+                            <button type="submit" class="{{ $opened ? 'crud-btn-danger' : 'crud-btn-success' }} !h-9 w-full justify-center">{{ $opened ? 'Tutup Sesi' : ($closed ? 'Buka Kembali' : 'Mulai Simulasi') }}</button>
+                        </form>
+                    @else
+                        <button disabled type="button" class="crud-btn-secondary !h-9 w-full justify-center opacity-60 cursor-not-allowed mt-auto" title="Program berstatus {{ $program->status }} (tidak dapat diubah)">
+                            {{ $opened ? 'Sesi Terbuka' : ($closed ? 'Sesi Ditutup' : 'Belum Dimulai') }}
+                        </button>
+                    @endif
                 @else
                     <button disabled class="crud-btn-secondary !h-9 w-full justify-center opacity-50 mt-auto">Belum tersedia</button>
                 @endif

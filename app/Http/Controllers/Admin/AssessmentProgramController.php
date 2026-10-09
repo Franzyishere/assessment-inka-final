@@ -41,6 +41,7 @@ class AssessmentProgramController extends Controller
             ...$request->validated(),
             'code' => 'ASM-'.Str::ulid(),
             'created_by' => $request->user()->id,
+            'auto_send_invitations' => true,
         ]);
 
         return to_route('admin.assessment-programs.index')->with('success', 'Program assessment berhasil dibuat.');

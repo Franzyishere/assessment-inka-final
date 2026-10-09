@@ -27,6 +27,20 @@
     @if($participation->requiresSimulationThreeChoice() && $programSimulation->scenario->type->delivery_mode === 'case_response')
         <div class="mt-6 rounded-xl border border-warning-200 bg-warning-50 p-5 dark:border-warning-500/30 dark:bg-warning-500/10"><h2 class="text-sm font-semibold text-warning-800 dark:text-warning-300">Menunggu penetapan paket Simulasi 3</h2><p class="mt-2 text-sm leading-6 text-warning-700 dark:text-warning-400">Admin akan menentukan CI materi panjang, CI materi pendek, atau In-Tray. Simulasi dapat dimulai setelah materi ditetapkan.</p></div>
     @endif
+    @if (! $programSimulation->isAvailableForParticipant() && $session?->status !== 'submitted' && $session?->status !== 'in_progress')
+        <div class="mt-6 flex items-start gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-theme-xs">
+            <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+            </span>
+            <div>
+                <h2 class="text-sm font-semibold text-amber-900">Sesi simulasi belum dibuka oleh Admin</h2>
+                <p class="mt-1 text-sm leading-6 text-amber-800">Tombol mulai akan aktif secara otomatis setelah admin/pengawas assessment membuka sesi ini. Harap tunggu instruksi di ruang assessment sebelum memulai pengerjaan.</p>
+            </div>
+        </div>
+    @endif
     <div class="mt-7 flex justify-end gap-3">
         <a href="{{ route('peserta-assessment.simulations.index') }}" class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 dark:border-gray-700 dark:text-gray-300">Kembali</a>
         @if ($session?->status === 'in_progress')
@@ -44,6 +58,14 @@
             @endif
         @elseif ($participation->requiresSimulationThreeChoice() && $programSimulation->scenario->type->delivery_mode === 'case_response')
             <span class="rounded-lg bg-warning-50 px-5 py-2.5 text-sm font-medium text-warning-700 dark:bg-warning-500/10 dark:text-warning-400">Menunggu penetapan admin</span>
+        @elseif (! $programSimulation->isAvailableForParticipant())
+            <button disabled type="button" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-5 py-2.5 text-sm font-medium text-gray-400 cursor-not-allowed shadow-none" title="Simulasi ini belum dibuka oleh Admin">
+                <svg class="size-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                <span>Menunggu Instruksi Admin</span>
+            </button>
         @elseif (in_array($programSimulation->scenario->type->delivery_mode, ['multi_page_response', 'file_upload', 'case_response'], true))
             <form method="POST" action="{{ route('peserta-assessment.simulations.start', $programSimulation) }}">@csrf<button class="rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600">Mulai Simulasi</button></form>
         @elseif ($programSimulation->scenario->type->delivery_mode === 'assessor_observation')
