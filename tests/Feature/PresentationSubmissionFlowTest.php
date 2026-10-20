@@ -1,8 +1,8 @@
 <?php
 
-// Exercise assessment business rules independently; real invitation/OTP gating is
-// covered without middleware bypass in AssessmentInvitationAccessTest.
-beforeEach(fn () => $this->withoutMiddleware(\App\Http\Middleware\EnsureAssessmentInvitation::class));
+// Exercise assessment business rules independently; real private-code gating is
+// covered without middleware bypass in ParticipantPrivateAccessTest.
+beforeEach(fn () => $this->withoutMiddleware(\App\Http\Middleware\EnsureParticipantAccess::class));
 
 use App\Models\AssessmentParticipant;
 use App\Models\AssessmentProgram;
@@ -41,14 +41,16 @@ test('participant uploads presentation and assigned assessor can download it', f
     $submission = SimulationSubmission::firstOrFail();
     Storage::disk('local')->assertExists($submission->storage_path);
     expect($submission->session->status)->toBe('submitted')->and($submission->file_checksum)->toHaveLength(64);
+    $submission->session->archiveGrant()->create(['assessor_id' => $assessor->id, 'assigned_by' => $admin->id]);
 
     // Participant can view and present their presentation
     $this->actingAs($participant)->get(route('peserta-assessment.simulations.presentation', $programSimulation))
-        ->assertOk()->assertSee('Viewer Presentasi Peserta')->assertSee('Mode Layar Penuh');
+        ->assertOk()->assertSee('Viewer Presentasi Peserta')->assertSee('Mode Layar Penuh')
+        ->assertSee('data-secure-pdf-viewer')->assertDontSee('Unduh PDF')->assertDontSee('Tab Baru')->assertDontSee('<iframe', false);
     $this->actingAs($participant)->get(route('peserta-assessment.simulations.presentation.preview', $programSimulation))
         ->assertOk()->assertHeader('content-type', 'application/pdf');
-    $this->actingAs($participant)->get(route('peserta-assessment.simulations.presentation.download', $programSimulation))
-        ->assertDownload('presentasi.pdf');
+    expect(\Illuminate\Support\Facades\Route::has('peserta-assessment.simulations.presentation.download'))->toBeFalse();
+    $this->actingAs($participant)->get('/peserta-assessment/simulations/'.$programSimulation->id.'/presentation/download')->assertNotFound();
 
     // Card remains visible on participant dashboard with "Tampilkan Presentasi" button
     $this->actingAs($participant)->get(route('peserta-assessment.simulations.index'))

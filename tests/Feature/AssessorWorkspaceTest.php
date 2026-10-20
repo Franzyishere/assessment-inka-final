@@ -44,7 +44,7 @@ test('assessor sees participants and monitoring only for assigned simulations', 
         ->assertSee('100%')->assertSee('Progres pengumpulan')->assertSee('Belum Dimulai')->assertDontSee('>Dinilai<', false);
 
     $this->get(route('asesor.dashboard'))->assertOk()
-        ->assertSee('Jawaban Dikumpulkan')->assertSee('Status Sesi Peserta')
+        ->assertSee('Arsip Dibagikan')->assertSee('Status Sesi Peserta')
         ->assertDontSee('Menunggu Penilaian')->assertDontSee('Progres Penilaian');
 
     $this->actingAs($assessor)->get(route('asesor.simulations.index'))

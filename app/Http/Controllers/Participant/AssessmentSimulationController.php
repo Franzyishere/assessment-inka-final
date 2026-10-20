@@ -27,7 +27,7 @@ class AssessmentSimulationController extends Controller
         AssessmentProgram::syncLifecycle();
 
         $participations = AssessmentParticipant::query()
-            ->when($request->attributes->get('assessment_invitation'), fn ($query, $invitation) => $query->whereKey($invitation->assessment_participant_id))
+            ->when($request->attributes->get('assessment_access'), fn ($query, $access) => $query->whereKey($access->assessment_participant_id))
             ->where('user_id', $request->user()->id)
             ->where('status', 'assigned')
             ->whereHas('program', fn ($query) => $query
@@ -88,6 +88,7 @@ class AssessmentSimulationController extends Controller
     {
         [$participation, $programSimulation] = $this->resolveAssignment($request, $programSimulation);
         $session = $this->session($programSimulation, $participation);
+        abort_if($session?->status === 'submitted' && $programSimulation->scenario->type->delivery_mode !== 'file_upload', 403, 'Simulasi sudah dikumpulkan.');
 
         return view('pages.participant.simulations.show', compact('programSimulation', 'participation', 'session') + [
             'title' => $programSimulation->scenario->type->name,
@@ -266,17 +267,6 @@ class AssessmentSimulationController extends Controller
                 'Content-Disposition' => 'inline',
             ]
         );
-    }
-
-    public function downloadPresentation(Request $request, AssessmentProgramSimulation $programSimulation)
-    {
-        [$participation, $programSimulation] = $this->resolveAssignment($request, $programSimulation);
-        $session = $this->session($programSimulation, $participation);
-        abort_unless($session, 404);
-        $submission = $session->submissions()->latest('id')->first();
-        abort_unless($submission && $submission->storage_path && Storage::disk('local')->exists($submission->storage_path), 404);
-
-        return Storage::disk('local')->download($submission->storage_path, $submission->original_filename);
     }
 
     public function material(Request $request, AssessmentProgramSimulation $programSimulation, int $page): View
@@ -552,7 +542,7 @@ class AssessmentSimulationController extends Controller
     {
         $programSimulation->load(['program', 'scenario.type', 'scenario.materialPages']);
         $participation = AssessmentParticipant::where('assessment_program_id', $programSimulation->assessment_program_id)
-            ->when($request->attributes->get('assessment_invitation'), fn ($query, $invitation) => $query->whereKey($invitation->assessment_participant_id))
+            ->when($request->attributes->get('assessment_access'), fn ($query, $access) => $query->whereKey($access->assessment_participant_id))
             ->where('user_id', $request->user()->id)
             ->where('status', 'assigned')
             ->firstOrFail();

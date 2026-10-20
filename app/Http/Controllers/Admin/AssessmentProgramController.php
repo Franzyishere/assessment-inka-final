@@ -41,7 +41,7 @@ class AssessmentProgramController extends Controller
             ...$request->validated(),
             'code' => 'ASM-'.Str::ulid(),
             'created_by' => $request->user()->id,
-            'auto_send_invitations' => true,
+            'auto_send_invitations' => false,
         ]);
 
         return to_route('admin.assessment-programs.index')->with('success', 'Program assessment berhasil dibuat.');
@@ -67,11 +67,13 @@ class AssessmentProgramController extends Controller
 
     public function destroy(Request $request, AssessmentProgram $assessmentProgram): RedirectResponse
     {
+        $request->validate(['archive_confirmation' => ['required', 'accepted']], [
+            'archive_confirmation.required' => 'Konfirmasikan pemindahan program ke arsip terlebih dahulu.',
+            'archive_confirmation.accepted' => 'Konfirmasikan pemindahan program ke arsip terlebih dahulu.',
+        ]);
+
         return DB::transaction(function () use ($request, $assessmentProgram) {
             $assessmentProgram = AssessmentProgram::query()->lockForUpdate()->findOrFail($assessmentProgram->id);
-            if ($assessmentProgram->status === 'active') {
-                return back()->with('error', 'Program berstatus aktif tidak dapat dihapus. Ubah status program terlebih dahulu jika ingin menghapus.');
-            }
 
             AuditLogger::record($request, 'assessment_program.archived', $assessmentProgram, [
                 'code' => $assessmentProgram->code,
@@ -87,15 +89,19 @@ class AssessmentProgramController extends Controller
     public function bulkDestroy(Request $request): RedirectResponse
     {
         $validated = $request->validate([
+            'archive_confirmation' => ['required', 'accepted'],
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['integer', 'distinct', 'exists:assessment_programs,id'],
-        ], ['ids.required' => 'Pilih minimal satu program yang akan dihapus.']);
+        ], [
+            'ids.required' => 'Pilih minimal satu program yang akan diarsipkan.',
+            'archive_confirmation.required' => 'Konfirmasikan pemindahan program ke arsip terlebih dahulu.',
+            'archive_confirmation.accepted' => 'Konfirmasikan pemindahan program ke arsip terlebih dahulu.',
+        ]);
 
         return DB::transaction(function () use ($request, $validated) {
             $programs = AssessmentProgram::query()->whereNull('archived_at')->whereIn('id', $validated['ids'])->orderBy('id')->lockForUpdate()->get();
-            $deletable = $programs->where('status', '!==', 'active');
 
-            foreach ($deletable as $program) {
+            foreach ($programs as $program) {
                 AuditLogger::record($request, 'assessment_program.archived', $program, [
                     'code' => $program->code,
                     'name' => $program->name,
@@ -105,13 +111,9 @@ class AssessmentProgramController extends Controller
                 $program->save();
             }
 
-            $skipped = $programs->count() - $deletable->count();
-            $message = $deletable->count().' program dipindahkan ke Arsip Program Assessment. Akses dan penilaian asesor tetap tersedia.';
-            if ($skipped > 0) {
-                $message .= ' '.$skipped.' program berstatus aktif dilewati.';
-            }
+            $message = $programs->count().' program dipindahkan ke Arsip Program Assessment. Assessment yang aktif tetap berjalan.';
 
-            return to_route('admin.assessment-programs.index')->with($deletable->isEmpty() ? 'error' : 'success', $message);
+            return to_route('admin.assessment-programs.index')->with($programs->isEmpty() ? 'error' : 'success', $message);
         });
     }
 }

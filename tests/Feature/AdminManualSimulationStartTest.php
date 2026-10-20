@@ -9,7 +9,7 @@ use App\Models\SimulationType;
 use App\Models\User;
 
 beforeEach(function () {
-    $this->withoutMiddleware(\App\Http\Middleware\EnsureAssessmentInvitation::class);
+    $this->withoutMiddleware(\App\Http\Middleware\EnsureParticipantAccess::class);
 });
 
 function manualSessionFixture(int $sequence = 1): array
@@ -56,7 +56,7 @@ test('monitoring uses compact controls and correctly shows a closed presentation
         ->assertDontSee('Selalu Terbuka')->assertDontSee('Selesai Dinilai')->assertDontSee('return confirm(', false);
 });
 
-test('admin cannot reopen inactive or archived programs', function () {
+test('admin cannot reopen inactive programs but can control active archived programs', function () {
     extract(manualSessionFixture());
     foreach (['draft', 'completed', 'cancelled'] as $status) {
         $program->update(['status' => $status]);
@@ -64,7 +64,7 @@ test('admin cannot reopen inactive or archived programs', function () {
         expect($simulation->fresh()->status)->toBe('scheduled');
     }
     $program->forceFill(['status' => 'active', 'archived_at' => now()])->save();
-    $this->post(route('admin.monitoring.simulations.start', [$program, 1]))->assertSessionHas('error');
+    $this->post(route('admin.monitoring.simulations.start', [$program, 1]))->assertSessionHas('success');
 });
 
 test('closed presentation rejects upload and duplicate submission preserves the original file', function () {

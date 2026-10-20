@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Middleware\EnsureAssessmentInvitation;
+use App\Http\Middleware\EnsureParticipantAccess;
 use App\Models\AssessmentParticipant;
 use App\Models\AssessmentProgram;
 use App\Models\AssessmentProgramSimulation;
@@ -12,8 +12,8 @@ use App\Models\SimulationType;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 
-// Real invitation/OTP gating is tested separately without middleware bypass.
-beforeEach(fn () => $this->withoutMiddleware(EnsureAssessmentInvitation::class));
+// Real private-code gating is tested separately without middleware bypass.
+beforeEach(fn () => $this->withoutMiddleware(EnsureParticipantAccess::class));
 
 beforeEach(function () {
     $this->seed(DatabaseSeeder::class);

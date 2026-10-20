@@ -16,12 +16,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // request reaches Laravel. Trust their forwarded scheme so generated
         // asset URLs remain HTTPS and are not blocked as mixed content.
         $middleware->trustProxies(at: '*');
-        $middleware->web(append: [\App\Http\Middleware\EnsureAssessmentInvitation::class]);
+        $middleware->web(append: [\App\Http\Middleware\EnsureParticipantAccess::class]);
 
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->dontFlash(['otp']);
+        $exceptions->dontFlash(['otp', 'access_code']);
     })->create();

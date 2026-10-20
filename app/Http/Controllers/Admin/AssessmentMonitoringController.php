@@ -65,8 +65,8 @@ class AssessmentMonitoringController extends Controller
     {
         return \Illuminate\Support\Facades\DB::transaction(function () use ($assessmentProgram, $sequence) {
             $assessmentProgram = AssessmentProgram::query()->lockForUpdate()->findOrFail($assessmentProgram->id);
-            if ($assessmentProgram->status !== 'active' || $assessmentProgram->archived_at || $assessmentProgram->ends_at?->isPast()) {
-                return back()->with('error', 'Sesi hanya dapat dibuka pada program aktif yang belum berakhir dan tidak diarsipkan.');
+            if ($assessmentProgram->status !== 'active' || $assessmentProgram->ends_at?->isPast()) {
+                return back()->with('error', 'Sesi hanya dapat dibuka pada program aktif yang belum berakhir.');
             }
             abort_unless(in_array($sequence, [1, 2, 3, 4], true), 404);
 

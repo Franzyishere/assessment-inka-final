@@ -27,13 +27,36 @@ class AssessmentResultArchiveController extends Controller
         $program = AssessmentProgram::findOrFail($program);
         $search = mb_strtolower(trim((string) $request->query('search')));
         $participants = $program->participants()->with([
-            'user', 'sessions.programSimulation.scenario.type', 'sessions.submissions', 'sessions.reviews.assessor',
+            'user', 'sessions.programSimulation.scenario.type', 'sessions.submissions', 'sessions.reviews.assessor', 'sessions.archiveGrant.assessor',
         ])->when($search !== '', fn ($query) => $query->whereHas('user', fn ($user) => $user
             ->where(fn ($q) => $q->whereRaw('LOWER(name) LIKE ?', ['%'.$search.'%'])
                 ->orWhereRaw('LOWER(email) LIKE ?', ['%'.$search.'%']))))
             ->orderBy('id')->paginate(15)->withQueryString();
 
-        return view('pages.admin.result-archives.show', compact('program', 'participants') + ['title' => 'Hasil Program Assessment']);
+        return view('pages.admin.result-archives.show', compact('program', 'participants') + [
+            'title' => 'Hasil Program Assessment',
+            'assessors' => \App\Models\User::where('role', 'asesor')->orderBy('name')->get(),
+        ]);
+    }
+
+    public function assign(Request $request, int $program, \App\Models\SimulationSession $session)
+    {
+        abort_unless($session->programSimulation->assessment_program_id === $program, 404);
+        abort_unless($session->status === 'submitted', 422, 'Arsip hanya dapat dibagikan setelah jawaban dikumpulkan.');
+        $data = $request->validate(['assessor_id' => [
+            'nullable', 'integer', \Illuminate\Validation\Rule::exists('users', 'id')->where('role', 'asesor'),
+        ]]);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($request, $session, $data) {
+            $session = \App\Models\SimulationSession::lockForUpdate()->findOrFail($session->id);
+            if (! empty($data['assessor_id'])) {
+                $session->archiveGrant()->updateOrCreate([], ['assessor_id' => $data['assessor_id'], 'assigned_by' => $request->user()->id]);
+            } else {
+                $session->archiveGrant()->delete();
+            }
+            \App\Support\AuditLogger::record($request, 'archive.assessor.assigned', $session, ['assessor_id' => $data['assessor_id'] ?? null]);
+        });
+
+        return back()->with('success', 'Pembagian arsip disimpan. Akses asesor mengikuti pembagian terbaru.');
     }
 
     public function file(int $program, SimulationSubmission $submission)

@@ -1,8 +1,8 @@
 <?php
 
-// Exercise assessment business rules independently; real invitation/OTP gating is
-// covered without middleware bypass in AssessmentInvitationAccessTest.
-beforeEach(fn () => $this->withoutMiddleware(\App\Http\Middleware\EnsureAssessmentInvitation::class));
+// Exercise assessment business rules independently; real private-code gating is
+// covered without middleware bypass in ParticipantPrivateAccessTest.
+beforeEach(fn () => $this->withoutMiddleware(\App\Http\Middleware\EnsureParticipantAccess::class));
 
 use App\Models\AssessmentParticipant;
 use App\Models\AssessmentProgram;
@@ -102,7 +102,7 @@ test('participant can view simulations of due draft program via runtime sync', f
     expect($program->fresh()->status)->toBe('active');
 });
 
-test('admin cannot delete program that was auto-activated because its start date arrived', function () {
+test('admin can archive auto-activated program without stopping it', function () {
     $admin = User::where('role', User::ROLE_ADMIN)->firstOrFail();
 
     $program = AssessmentProgram::create([
@@ -118,9 +118,9 @@ test('admin cannot delete program that was auto-activated because its start date
     $this->actingAs($admin)->get(route('admin.assessment-programs.index'))->assertOk();
     expect($program->fresh()->status)->toBe('active');
 
-    // Admin tries to delete it while active -> forbidden
-    $this->actingAs($admin)->delete(route('admin.assessment-programs.destroy', $program))
-        ->assertSessionHas('error');
+    $this->actingAs($admin)->delete(route('admin.assessment-programs.destroy', $program), ['archive_confirmation' => '1'])
+        ->assertSessionHas('success');
 
-    $this->assertDatabaseHas('assessment_programs', ['id' => $program->id]);
+    expect($program->fresh()->archived_at)->not->toBeNull();
+    expect($program->fresh()->status)->toBe('active');
 });

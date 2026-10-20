@@ -11,7 +11,7 @@ class AccessControlController extends Controller
     {
         $permissions = [
             'super_admin' => ['Dashboard sistem', 'Seluruh akun & role', 'Seluruh administrasi assessment dan undangan', 'Matriks hak akses', 'Audit log'],
-            'admin' => ['Program assessment', 'Bank simulasi', 'Akun peserta', 'Undangan dan monitoring email', 'Penugasan asesor', 'Monitoring assessment'],
+            'admin' => ['Program assessment', 'Bank simulasi', 'Akun peserta', 'Kode akses peserta', 'Penugasan asesor', 'Pembagian arsip', 'Monitoring assessment'],
             'asesor' => ['Simulasi ditugaskan', 'Submission peserta', 'Aktivitas sesi', 'Penilaian & rekomendasi'],
             'peserta_assessment' => ['Login undangan dan OTP pada hari pelaksanaan', 'Simulasi Saya pada program yang diundang', 'Pengerjaan dan upload presentasi', 'Tanpa akses riwayat/hasil penilaian'],
         ];

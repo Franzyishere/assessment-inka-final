@@ -30,18 +30,14 @@ class AppServiceProvider extends ServiceProvider
                 ? response()->json(['message' => $message], 429, $headers)
                 : redirect()->back()->withErrors(['access' => $message])->withHeaders($headers);
         };
-        RateLimiter::for('assessment-otp', function (Request $request) use ($limited) {
-            $key = hash('sha256', (string) $request->route('token'));
+        RateLimiter::for('assessment-login', function (Request $request) use ($limited) {
+            $key = hash('sha256', trim((string) $request->input('nip')));
 
             return [
-                Limit::perMinute(5)->by('otp:'.$key.':'.$request->ip())->response($limited),
-                Limit::perHour(10)->by('otp-hour:'.$key)->response($limited),
-                Limit::perMinute(120)->by('otp-ip:'.$request->ip())->response($limited),
+                Limit::perMinute(5)->by('access:'.$key.':'.$request->ip())->response($limited),
+                Limit::perHour(30)->by('access-nip:'.$key)->response($limited),
+                Limit::perMinute(120)->by('access-ip:'.$request->ip())->response($limited),
             ];
-        });
-        RateLimiter::for('assessment-verify', function (Request $request) use ($limited) {
-            return Limit::perMinute(10)
-                ->by('verify:'.hash('sha256', (string) $request->route('token')).':'.$request->ip())->response($limited);
         });
     }
 }

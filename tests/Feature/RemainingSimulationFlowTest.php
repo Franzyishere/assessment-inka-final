@@ -1,8 +1,8 @@
 <?php
 
-// Exercise assessment business rules independently; real invitation/OTP gating is
-// covered without middleware bypass in AssessmentInvitationAccessTest.
-beforeEach(fn () => $this->withoutMiddleware(\App\Http\Middleware\EnsureAssessmentInvitation::class));
+// Exercise assessment business rules independently; real private-code gating is
+// covered without middleware bypass in ParticipantPrivateAccessTest.
+beforeEach(fn () => $this->withoutMiddleware(\App\Http\Middleware\EnsureParticipantAccess::class));
 
 use App\Models\AssessmentParticipant;
 use App\Models\AssessmentProgram;
@@ -97,6 +97,7 @@ test('participant completes timed lgd then assessor proceeds to review', functio
     $this->actingAs($participantUser)->post(route('peserta-assessment.simulations.lgd-review.submit', $simulation), ['confirmation' => '1'])
         ->assertRedirect(route('peserta-assessment.simulations.index'));
     $session = SimulationSession::where('assessment_program_simulation_id', $simulation->id)->firstOrFail();
+    $session->archiveGrant()->create(['assessor_id' => $assessor->id, 'assigned_by' => $admin->id]);
     $this->actingAs($assessor)->get(route('asesor.simulations.show', $simulation))->assertOk()->assertSee('Lihat & Unduh Jawaban');
     $this->actingAs($assessor)->get(route('asesor.reviews.edit', $session))->assertOk()->assertSee('Hasil Observasi LGD');
 });

@@ -20,7 +20,7 @@ class AssessorAssignmentController extends Controller
     public function index(Request $request): View
     {
         $query = AssessmentProgram::query()
-            ->whereNull('archived_at')
+            ->where(fn ($query) => $query->whereNull('archived_at')->orWhereIn('status', ['draft', 'active']))
             ->whereHas('simulations')
             ->with(['simulations.scenario.type', 'simulations.assessorAssignments.assessor'])
             ->withCount(['simulations', 'participants'])

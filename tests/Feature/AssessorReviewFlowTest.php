@@ -28,6 +28,7 @@ function submittedSessionForReview(): array
     $session = SimulationSession::create(['assessment_program_simulation_id' => $programSimulation->id, 'assessment_participant_id' => $participant->id, 'status' => 'submitted', 'started_at' => now()->subHour(), 'submitted_at' => now()]);
     SimulationSubmission::create(['simulation_session_id' => $session->id, 'response_text' => json_encode([1 => 'Jawaban peserta']), 'revision' => 1, 'submitted_at' => now()]);
     AssessorAssignment::create(['assessment_program_simulation_id' => $programSimulation->id, 'assessor_id' => $assessor->id, 'assigned_by' => $admin->id, 'assigned_at' => now()]);
+    $session->archiveGrant()->create(['assessor_id' => $assessor->id, 'assigned_by' => $admin->id]);
 
     return compact('assessor', 'session');
 }

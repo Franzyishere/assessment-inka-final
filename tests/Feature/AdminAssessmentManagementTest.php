@@ -1,8 +1,8 @@
 <?php
 
-// Exercise assessment business rules independently; real invitation/OTP gating is
-// covered without middleware bypass in AssessmentInvitationAccessTest.
-beforeEach(fn () => $this->withoutMiddleware(\App\Http\Middleware\EnsureAssessmentInvitation::class));
+// Exercise assessment business rules independently; real private-code gating is
+// covered without middleware bypass in ParticipantPrivateAccessTest.
+beforeEach(fn () => $this->withoutMiddleware(\App\Http\Middleware\EnsureParticipantAccess::class));
 
 use App\Models\AssessmentParticipant;
 use App\Models\AssessmentProgram;
@@ -186,6 +186,15 @@ test('program setup integrates selected simulation participant and assessor', fu
     expect($programSimulation->simulation_scenario_id)->toBe($scenario->id)
         ->and(AssessmentParticipant::where('assessment_program_id', $program->id)->value('user_id'))->toBe($participant->id)
         ->and(AssessorAssignment::where('assessment_program_simulation_id', $programSimulation->id)->value('assessor_id'))->toBe($assessor->id);
+    $access = AssessmentParticipant::where('assessment_program_id', $program->id)->firstOrFail()->accessCode;
+    expect($access)->not->toBeNull();
+    $secret = $access->secret;
+    $this->put(route('admin.assessment-programs.setup.update', $program), [
+        'participant_ids' => [$participant->id],
+        'participant_categories' => [$participant->id => 'grade_1_to_2'],
+        'assessor_ids' => [$assessor->id],
+    ])->assertSessionHasNoErrors();
+    expect($access->fresh()->secret)->toBe($secret);
 });
 
 test('active simulation created from admin form is available in program setup', function () {
@@ -218,21 +227,22 @@ test('program setup requires at least one assessor', function () {
         ->assertSessionHasErrors('assessor_ids');
 });
 
-test('admin can delete a draft program but cannot delete an active program', function () {
+test('admin can archive draft and active programs after confirmation', function () {
     $admin = User::where('role', User::ROLE_ADMIN)->firstOrFail();
     $draft = AssessmentProgram::create(['code' => 'DELETE-DRAFT', 'name' => 'Draft Dihapus', 'status' => 'draft', 'created_by' => $admin->id]);
     $active = AssessmentProgram::create(['code' => 'KEEP-ACTIVE', 'name' => 'Aktif Dipertahankan', 'status' => 'active', 'created_by' => $admin->id]);
 
-    $this->actingAs($admin)->delete(route('admin.assessment-programs.destroy', $draft))
+    $this->actingAs($admin)->delete(route('admin.assessment-programs.destroy', $draft), ['archive_confirmation' => '1'])
         ->assertRedirect(route('admin.assessment-programs.index'));
     expect($draft->fresh()->archived_at)->not->toBeNull();
 
-    $this->actingAs($admin)->delete(route('admin.assessment-programs.destroy', $active))
-        ->assertSessionHas('error');
-    $this->assertDatabaseHas('assessment_programs', ['id' => $active->id]);
+    $this->actingAs($admin)->delete(route('admin.assessment-programs.destroy', $active), ['archive_confirmation' => '1'])
+        ->assertSessionHas('success');
+    expect($active->fresh()->archived_at)->not->toBeNull();
+    expect($active->fresh()->status)->toBe('active');
 });
 
-test('admin can bulk delete draft programs while protected programs remain', function () {
+test('admin can bulk archive draft and active programs', function () {
     $admin = User::where('role', User::ROLE_ADMIN)->firstOrFail();
     $drafts = collect(['Bulk Draft Satu', 'Bulk Draft Dua'])->map(fn ($name, $index) => AssessmentProgram::create([
         'code' => 'BULK-DRAFT-'.$index, 'name' => $name, 'status' => 'draft', 'created_by' => $admin->id,
@@ -241,10 +251,12 @@ test('admin can bulk delete draft programs while protected programs remain', fun
 
     $this->actingAs($admin)->delete(route('admin.assessment-programs.bulk-destroy'), [
         'ids' => [...$drafts->pluck('id'), $active->id],
+        'archive_confirmation' => '1',
     ])->assertRedirect(route('admin.assessment-programs.index'))->assertSessionHas('success');
 
     foreach ($drafts as $draft) expect($draft->fresh()->archived_at)->not->toBeNull();
-    $this->assertDatabaseHas('assessment_programs', ['id' => $active->id]);
+    expect($active->fresh()->archived_at)->not->toBeNull();
+    expect($active->fresh()->status)->toBe('active');
 });
 
 test('admin can bulk delete only participant accounts without program history', function () {
@@ -260,4 +272,12 @@ test('admin can bulk delete only participant accounts without program history', 
 
     $this->assertDatabaseMissing('users', ['id' => $free->id]);
     $this->assertDatabaseHas('users', ['id' => $linked->id]);
+});
+
+test('archiving requires explicit confirmation for single and bulk requests', function () {
+    $admin = User::where('role', User::ROLE_ADMIN)->firstOrFail();
+    $program = AssessmentProgram::create(['code' => 'CONFIRM-ARCHIVE', 'name' => 'Konfirmasi', 'status' => 'active', 'created_by' => $admin->id]);
+    $this->actingAs($admin)->delete(route('admin.assessment-programs.destroy', $program))->assertSessionHasErrors('archive_confirmation');
+    $this->delete(route('admin.assessment-programs.bulk-destroy'), ['ids' => [$program->id], 'archive_confirmation' => '0'])->assertSessionHasErrors('archive_confirmation');
+    expect($program->fresh()->archived_at)->toBeNull();
 });

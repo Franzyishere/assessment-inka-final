@@ -35,7 +35,7 @@
                             <td class="px-4 py-3"><div class="text-sm font-medium text-gray-900">{{ $participant->user->name }}</div><div class="text-xs text-gray-500">{{ $participant->user->email }}</div></td>
                             <td class="px-4 py-3"><span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $status === 'submitted' ? 'bg-success-50 text-success-700' : ($status === 'in_progress' ? 'bg-warning-50 text-warning-700' : 'bg-gray-100 text-gray-600') }}">{{ $status === 'submitted' ? 'Selesai' : ($status === 'in_progress' ? 'Sedang Berlangsung' : 'Belum Dimulai') }}</span></td>
                             <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-500">{{ $session?->submitted_at?->format('d M Y, H:i') ?? '-' }}</td>
-                            <td class="px-4 py-3">@if($session?->status === 'submitted')<a href="{{ route('asesor.reviews.edit', $session) }}" class="crud-btn-primary">Lihat &amp; Unduh Jawaban</a>@else<span class="text-xs text-gray-400">Menunggu peserta</span>@endif</td>
+                            <td class="px-4 py-3">@if($session?->status === 'submitted' && $session->archiveGrant?->assessor_id === auth()->id())<a href="{{ route('asesor.reviews.edit', $session) }}" class="crud-btn-primary">Lihat &amp; Unduh Jawaban</a>@else<span class="text-xs text-gray-400">Menunggu peserta</span>@endif</td>
                         </tr>
                     @empty
                         <tr><td colspan="4" class="px-5 py-14 text-center text-sm text-gray-500">Belum ada peserta pada program ini.</td></tr>
@@ -50,10 +50,10 @@
                             <td class="px-4 py-3"><span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $session->status === 'submitted' ? 'bg-success-50 text-success-700' : ($session->status === 'in_progress' ? 'bg-warning-50 text-warning-700' : 'bg-gray-100 text-gray-600') }}">{{ match($session->status) { 'submitted' => 'Selesai', 'in_progress' => 'Sedang Berlangsung', default => ucwords(str_replace('_', ' ', $session->status)) } }}</span></td>
                             <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-500">{{ $session->submitted_at?->format('d M Y, H:i') ?? '-' }}</td>
                             <td class="px-4 py-3"><div class="flex flex-wrap items-center gap-2">
-                                @if($submission?->storage_path)
+                                @if($submission?->storage_path && $session->status === 'submitted' && $session->archiveGrant?->assessor_id === auth()->id())
                                     <span class="mr-2 max-w-48 truncate text-xs text-gray-500" title="{{ $submission->original_filename }}">{{ $submission->original_filename }}</span><a target="_blank" href="{{ route('asesor.submissions.preview', $submission) }}" class="crud-btn-secondary">Preview</a><a href="{{ route('asesor.submissions.download', $submission) }}" class="text-sm font-medium text-gray-600 hover:text-gray-900">Unduh</a>
                                 @elseif($submission)<span class="text-xs text-gray-500">Jawaban tersimpan</span>@else<span class="text-xs text-gray-400">Belum ada jawaban</span>@endif
-                                @if($session->status === 'submitted')<a href="{{ route('asesor.reviews.edit', $session) }}" class="crud-btn-primary">Lihat &amp; Unduh Jawaban</a>@endif
+                                @if($session->status === 'submitted' && $session->archiveGrant?->assessor_id === auth()->id())<a href="{{ route('asesor.reviews.edit', $session) }}" class="crud-btn-primary">Lihat &amp; Unduh Jawaban</a>@endif
                             </div></td>
                         </tr>
                     @empty

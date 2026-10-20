@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Assessor;
 
 use App\Http\Controllers\Controller;
 use App\Models\AssessmentProgram;
-use App\Models\AssessorAssignment;
 use App\Models\SimulationSession;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -20,12 +19,13 @@ class SimulationReviewController extends Controller
         $search = mb_strtolower(trim((string) $request->query('search')));
         $programs = AssessmentProgram::query()
             ->whereHas('simulations', fn ($query) => $query
-                ->whereHas('assessorAssignments', fn ($assignment) => $assignment->where('assessor_id', $assessorId))
-                ->whereHas('sessions', fn ($session) => $session->where('status', 'submitted')))
+                ->whereHas('sessions', fn ($session) => $session->where('status', 'submitted')
+                    ->whereHas('archiveGrant', fn ($grant) => $grant->where('assessor_id', $assessorId))))
             ->with(['simulations' => fn ($query) => $query
-                ->whereHas('assessorAssignments', fn ($assignmentQuery) => $assignmentQuery->where('assessor_id', $assessorId))
+                ->whereHas('sessions.archiveGrant', fn ($grant) => $grant->where('assessor_id', $assessorId))
                 ->with(['sessions' => fn ($sessionQuery) => $sessionQuery
                     ->where('status', 'submitted')
+                    ->whereHas('archiveGrant', fn ($grant) => $grant->where('assessor_id', $assessorId))
                     ->with('participant.user')])])
             ->when($search, fn ($query) => $query->whereRaw('LOWER(name) LIKE ?', ["%{$search}%"]))
             ->orderByDesc('starts_at')
@@ -39,15 +39,16 @@ class SimulationReviewController extends Controller
     {
         $assessorId = $request->user()->id;
         $search = mb_strtolower(trim((string) $request->query('search')));
-        $assignmentIds = AssessorAssignment::query()
-            ->where('assessor_id', $assessorId)
+        $assignmentIds = SimulationSession::query()
+            ->whereHas('archiveGrant', fn ($grant) => $grant->where('assessor_id', $assessorId))
+            ->where('status', 'submitted')
             ->whereHas('programSimulation', fn ($query) => $query->where('assessment_program_id', $program->id))
-            ->pluck('assessment_program_simulation_id');
+            ->pluck('id');
 
         abort_if($assignmentIds->isEmpty(), 403);
 
         $sessions = SimulationSession::query()
-            ->whereIn('assessment_program_simulation_id', $assignmentIds)
+            ->whereIn('id', $assignmentIds)
             ->where('status', 'submitted')
             ->when($search, fn ($query) => $query->whereHas('participant.user', fn ($userQuery) => $userQuery
                 ->whereRaw('LOWER(name) LIKE ?', ["%{$search}%"])
@@ -164,7 +165,6 @@ class SimulationReviewController extends Controller
 
     private function authorizeSession(Request $request, SimulationSession $session): void
     {
-        abort_unless(AssessorAssignment::where('assessment_program_simulation_id', $session->assessment_program_simulation_id)
-            ->where('assessor_id', $request->user()->id)->exists(), 403);
+        abort_unless($session->archiveGrant()->where('assessor_id', $request->user()->id)->exists(), 403);
     }
 }

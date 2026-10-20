@@ -57,6 +57,7 @@ class UserManagementController extends Controller
                 || SimulationScenario::where('created_by', $user->id)->exists()
                 || $user->assessmentParticipations()->exists()
                 || AssessorAssignment::where('assessor_id', $user->id)->orWhere('assigned_by', $user->id)->exists()
+                || \App\Models\AssessmentArchiveGrant::where('assessor_id', $user->id)->orWhere('assigned_by', $user->id)->exists()
                 || $user->simulationReviews()->exists()) {
                 return back()->with('error', 'Pengguna tidak dapat dihapus karena masih memiliki keterkaitan dengan program, materi simulasi, penugasan, atau penilaian assessment.');
             }

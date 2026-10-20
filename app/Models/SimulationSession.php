@@ -9,6 +9,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SimulationSession extends Model
 {
+    public function archiveGrant(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(AssessmentArchiveGrant::class);
+    }
+
     use HasFactory;
 
     protected $fillable = ['assessment_program_simulation_id', 'assessment_participant_id', 'status', 'started_at', 'expires_at', 'submitted_at', 'session_token', 'device_identifier', 'last_ip_address', 'last_user_agent'];

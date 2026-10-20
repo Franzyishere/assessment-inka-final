@@ -33,7 +33,7 @@
         </div>
 
         <div class="flex items-center bg-white/75 px-6 py-9 backdrop-blur-lg sm:px-10 lg:px-12">
-            <div class="mx-auto w-full max-w-md">
+            <div class="mx-auto w-full max-w-md" x-data="{ staff: @js((bool) old('email')) }">
                 <div class="mb-7 flex justify-center lg:hidden">
                     <div class="flex h-20 w-60 items-center overflow-hidden rounded-2xl bg-white px-4 shadow-lg">
                         <video autoplay muted loop playsinline preload="metadata" disablepictureinpicture poster="{{ asset('images/logo/logo-inka-full.svg') }}" class="h-full w-full object-contain" aria-label="Logo animasi PT INKA">
@@ -51,9 +51,32 @@
 
                 <span class="inline-flex rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700">Selamat datang kembali</span>
                 <h2 class="mt-4 text-3xl font-bold tracking-tight text-gray-900">Masuk ke akun Anda</h2>
-                <p class="mt-2 text-sm leading-6 text-gray-500">Admin dan asesor menggunakan email dan password. Peserta masuk melalui tautan undangan di email, lalu meminta OTP.</p>
+                <div class="mt-6 flex border-b border-gray-300/70" role="tablist" aria-label="Jenis akses login"
+                    @keydown.arrow-right.prevent="staff = !staff; $nextTick(() => (staff ? $refs.staffLoginTab : $refs.participantLoginTab).focus())"
+                    @keydown.arrow-left.prevent="staff = !staff; $nextTick(() => (staff ? $refs.staffLoginTab : $refs.participantLoginTab).focus())"
+                    @keydown.home.prevent="staff = false; $refs.participantLoginTab.focus()"
+                    @keydown.end.prevent="staff = true; $refs.staffLoginTab.focus()">
+                    <button id="participant-login-tab" x-ref="participantLoginTab" type="button" role="tab" aria-controls="participant-login-panel" @click="staff = false" :aria-selected="!staff" :tabindex="staff ? -1 : 0"
+                        class="-mb-px flex-1 border-b-2 px-3 py-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+                        :class="!staff ? 'border-brand-600 text-brand-700' : 'border-transparent text-gray-500 hover:text-gray-800'">Peserta</button>
+                    <button id="staff-login-tab" x-ref="staffLoginTab" type="button" role="tab" aria-controls="staff-login-panel" @click="staff = true" :aria-selected="staff" :tabindex="staff ? 0 : -1"
+                        class="-mb-px flex-1 border-b-2 px-3 py-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+                        :class="staff ? 'border-brand-600 text-brand-700' : 'border-transparent text-gray-500 hover:text-gray-800'">Admin / Asesor</button>
+                </div>
+                <form id="participant-login-panel" role="tabpanel" aria-labelledby="participant-login-tab" x-show="!staff" method="POST" action="{{ route('participant.login') }}" class="mt-6 space-y-4">
+                    @csrf
+                    <p class="text-sm text-gray-600">Masukkan NIP dan kode pribadi yang diberikan Admin.</p>
+                    <label class="block text-sm font-semibold text-gray-700" for="nip">NIP <span class="text-error-500">*</span></label>
+                    <input id="nip" name="nip" value="{{ old('nip') }}" required maxlength="100" autocomplete="username" placeholder="Masukkan NIP Anda" class="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-gray-900 placeholder:text-sm placeholder:text-gray-400">
+                    @error('nip')<p class="text-sm text-error-600">{{ $message }}</p>@enderror
+                    <label class="block text-sm font-semibold text-gray-700" for="access_code">Kode akses pribadi <span class="text-error-500">*</span></label>
+                    <input id="access_code" name="access_code" type="password" required minlength="12" maxlength="12" autocomplete="off" placeholder="Masukkan 12 karakter kode akses" class="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-gray-900 placeholder:text-sm placeholder:text-gray-400">
+                    @error('access_code')<p class="text-sm text-error-600">{{ $message }}</p>@enderror
+                    @error('access')<p role="alert" class="text-sm text-error-600">{{ $message }}</p>@enderror
+                    <button type="submit" class="h-12 w-full rounded-xl bg-brand-600 px-5 text-sm font-semibold text-white">Masuk Assessment</button>
+                </form>
 
-                <form method="POST" action="{{ route('login.store') }}" class="mt-8">
+                <form id="staff-login-panel" role="tabpanel" aria-labelledby="staff-login-tab" x-show="staff" x-cloak method="POST" action="{{ route('login.store') }}" class="mt-6">
                     @csrf
                     <div class="space-y-5">
                         <div>

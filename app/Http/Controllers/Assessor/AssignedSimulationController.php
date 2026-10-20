@@ -80,7 +80,7 @@ class AssignedSimulationController extends Controller
     public function show(Request $request, AssessmentProgramSimulation $programSimulation): View
     {
         $this->authorizeAssignment($request, $programSimulation);
-        $programSimulation->load(['program.participants.user', 'scenario.type', 'sessions.participant.user', 'sessions.submissions']);
+        $programSimulation->load(['program.participants.user', 'scenario.type', 'sessions.participant.user', 'sessions.submissions', 'sessions.archiveGrant']);
         if ($programSimulation->scenario->type->delivery_mode === 'case_response') {
             $package = $programSimulation->scenario->simulation_package;
             $programSimulation->program->setRelation('participants', $programSimulation->program->participants
@@ -93,7 +93,7 @@ class AssignedSimulationController extends Controller
     public function download(Request $request, SimulationSubmission $submission)
     {
         $submission->load('session.programSimulation');
-        $this->authorizeAssignment($request, $submission->session->programSimulation);
+        abort_unless($submission->session->status === 'submitted' && $submission->session->archiveGrant()->where('assessor_id', $request->user()->id)->exists(), 403);
         abort_unless($submission->storage_path && Storage::disk('local')->exists($submission->storage_path), 404);
 
         return Storage::disk('local')->download($submission->storage_path, $submission->original_filename);
@@ -102,7 +102,7 @@ class AssignedSimulationController extends Controller
     public function preview(Request $request, SimulationSubmission $submission)
     {
         $submission->load('session.programSimulation');
-        $this->authorizeAssignment($request, $submission->session->programSimulation);
+        abort_unless($submission->session->status === 'submitted' && $submission->session->archiveGrant()->where('assessor_id', $request->user()->id)->exists(), 403);
         abort_unless($submission->mime_type === 'application/pdf' && $submission->storage_path && Storage::disk('local')->exists($submission->storage_path), 404);
 
         return Storage::disk('local')->response(

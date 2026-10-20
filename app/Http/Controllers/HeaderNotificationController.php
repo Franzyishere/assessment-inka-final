@@ -14,13 +14,12 @@ class HeaderNotificationController extends Controller
         $items = [];
         if (in_array($user->role, ['admin', 'super_admin'], true)) {
             $count = SimulationSession::where('status', 'submitted')
-                ->whereDoesntHave('reviews', fn ($q) => $q->where('status', 'submitted'))->count();
-            if ($count) $items[] = ['title' => "$count submission belum memiliki penilaian final", 'url' => route('admin.monitoring.index')];
+                ->whereDoesntHave('archiveGrant')->count();
+            if ($count) $items[] = ['title' => "$count hasil simulasi belum dibagikan kepada asesor", 'url' => route('admin.result-archives.index')];
         } elseif ($user->role === 'asesor') {
             $count = SimulationSession::where('status', 'submitted')
-                ->whereHas('programSimulation.assessorAssignments', fn ($q) => $q->where('assessor_id', $user->id))
-                ->whereDoesntHave('reviews', fn ($q) => $q->where('assessor_id', $user->id)->where('status', 'submitted'))->count();
-            if ($count) $items[] = ['title' => "$count submission menunggu penilaian Anda", 'url' => route('asesor.reviews.index')];
+                ->whereHas('archiveGrant', fn ($q) => $q->where('assessor_id', $user->id))->count();
+            if ($count) $items[] = ['title' => "$count arsip hasil assessment dibagikan kepada Anda", 'url' => route('asesor.reviews.index')];
         }
         return response()->json(['items' => $items])->header('Cache-Control', 'no-store');
     }

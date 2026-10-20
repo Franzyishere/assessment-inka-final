@@ -136,9 +136,6 @@ class AssessmentProgramSetupController extends Controller
                 throw ValidationException::withMessages(['assessor_ids' => 'Asesor yang sudah memiliki penilaian tidak dapat dilepas dari tim program.']);
             }
 
-            // Server-managed: preserve historical opt-outs without exposing a toggle.
-            $autoSend = $assessmentProgram->auto_send_invitations;
-
             DB::transaction(function () use ($request, $assessmentProgram, $catalog, $scenarioIds, $participantIds, $assessorIds, $data, $upgradingMaterials, $simulationThreePackages): void {
                 $assessmentProgram->simulations()->whereNotIn('simulation_scenario_id', $scenarioIds)->delete();
 
@@ -192,6 +189,13 @@ class AssessmentProgramSetupController extends Controller
                     }
                     $attributes += ['simulation_three_choice' => $newChoice, 'simulation_three_chosen_at' => $newChoice ? ($newChoice === $oldChoice ? $participant->simulation_three_chosen_at : now()) : null];
                     $participant->update($attributes);
+                    // Historical setup remains editable without issuing new credentials.
+                    $access = app(\App\Services\AssessmentAccessService::class);
+                    if (in_array($assessmentProgram->status, ['draft', 'active'], true)
+                        && (! $assessmentProgram->ends_at || $assessmentProgram->ends_at->isFuture())
+                        && ! $access->completed($participant)) {
+                        $access->issue($participant);
+                    }
                     if ($newChoice !== $oldChoice) {
                         AuditLogger::record($request, 'admin.simulation_three_choice.updated', $participant, [
                             'previous_choice' => $oldChoice, 'simulation_package' => $newChoice,
@@ -201,30 +205,7 @@ class AssessmentProgramSetupController extends Controller
                 }
             });
 
-            $sentCount = 0;
-            if ($autoSend && $assessmentProgram->starts_at && now()->gte($assessmentProgram->starts_at->copy()->subMinutes(10))) {
-                $service = app(\App\Services\AssessmentInvitationService::class);
-                $uninvited = $assessmentProgram->participants()
-                    ->where('status', 'assigned')
-                    ->get();
-
-                foreach ($uninvited as $participant) {
-                    try {
-                        if ($service->issue($participant, $request->user()->id, automatic: true)) {
-                            $sentCount++;
-                        }
-                    } catch (\Throwable $e) {
-                        \Illuminate\Support\Facades\Log::warning('Automatic invitation could not be queued.', ['participant_id' => $participant->id, 'error_type' => $e::class]);
-                    }
-                }
-            }
-
-            $message = 'Susunan program dan penugasan berhasil disimpan.';
-            if ($sentCount > 0) {
-                $message .= " {$sentCount} undangan masuk antrean pengiriman. Periksa status pada menu Undangan Assessment.";
-            } elseif ($autoSend && $assessmentProgram->starts_at && now()->lt($assessmentProgram->starts_at->copy()->subMinutes(10))) {
-                $message .= ' Undangan akan otomatis dikirim 10 menit sebelum program aktif.';
-            }
+            $message = 'Susunan program disimpan. Kode peserta tersedia pada menu Akses Peserta.';
 
             return to_route($assessmentProgram->archived_at ? 'admin.result-archives.index' : 'admin.assessment-programs.index')->with('success', $message);
         });

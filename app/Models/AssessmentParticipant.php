@@ -9,6 +9,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AssessmentParticipant extends Model
 {
+    public function accessCode(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(AssessmentAccessCode::class);
+    }
+
     public function invitation(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(AssessmentInvitation::class);

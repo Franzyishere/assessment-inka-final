@@ -1,8 +1,8 @@
 <?php
 
-// Exercise assessment business rules independently; real invitation/OTP gating is
-// covered without middleware bypass in AssessmentInvitationAccessTest.
-beforeEach(fn () => $this->withoutMiddleware(\App\Http\Middleware\EnsureAssessmentInvitation::class));
+// Exercise assessment business rules independently; real private-code gating is
+// covered without middleware bypass in ParticipantPrivateAccessTest.
+beforeEach(fn () => $this->withoutMiddleware(\App\Http\Middleware\EnsureParticipantAccess::class));
 
 use App\Models\AssessmentParticipant;
 use App\Models\AssessmentProgram;

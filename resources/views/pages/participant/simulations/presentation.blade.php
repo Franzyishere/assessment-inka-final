@@ -4,7 +4,7 @@
 <x-common.page-breadcrumb :pageTitle="$submission ? 'Tampilan Presentasi' : 'Upload Presentasi'" />
 
 @if($submission)
-    <div class="space-y-6" x-data="{ isFullscreen: false, toggleFullscreen() { const el = document.getElementById('presentation-container'); if (!document.fullscreenElement) { el.requestFullscreen().then(() => this.isFullscreen = true).catch(() => window.open('{{ route('peserta-assessment.simulations.presentation.preview', $programSimulation) }}', '_blank')); } else { document.exitFullscreen().then(() => this.isFullscreen = false); } } }" @fullscreenchange.window="isFullscreen = !!document.fullscreenElement">
+    <div class="space-y-6" x-data="{ isFullscreen: false, fullscreenError: false, toggleFullscreen() { const el = document.getElementById('presentation-container'); if (!document.fullscreenElement) { el.requestFullscreen().then(() => this.isFullscreen = true).catch(() => this.fullscreenError = true); } else { document.exitFullscreen().then(() => this.isFullscreen = false); } } }" @fullscreenchange.window="isFullscreen = !!document.fullscreenElement">
         <!-- Header & Action Card -->
         <div class="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-xs sm:flex-row sm:items-center sm:justify-between dark:border-gray-800 dark:bg-white/[0.03]">
             <div>
@@ -29,18 +29,6 @@
                     </svg>
                     <span>Daftar Simulasi</span>
                 </a>
-                <a href="{{ route('peserta-assessment.simulations.presentation.download', $programSimulation) }}" class="crud-btn-secondary inline-flex items-center gap-1.5" title="Unduh file PDF presentasi">
-                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
-                    </svg>
-                    <span>Unduh PDF</span>
-                </a>
-                <a target="_blank" href="{{ route('peserta-assessment.simulations.presentation.preview', $programSimulation) }}" class="crud-btn-secondary inline-flex items-center gap-1.5" title="Buka di Tab Baru">
-                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/>
-                    </svg>
-                    <span>Tab Baru</span>
-                </a>
                 <button type="button" @click="toggleFullscreen()" class="crud-btn-primary inline-flex items-center gap-2">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
@@ -50,6 +38,7 @@
             </div>
         </div>
 
+        <p x-show="fullscreenError" x-cloak role="alert" class="text-sm text-error-600">Layar penuh tidak tersedia. Silakan gunakan preview di halaman ini.</p>
         <!-- Presentation Guidance Card -->
         <div class="rounded-xl border border-brand-200 bg-brand-50/70 p-4 text-xs leading-relaxed text-brand-900 dark:border-brand-500/20 dark:bg-brand-500/10 dark:text-brand-300">
             <div class="flex items-start gap-3">
@@ -61,7 +50,7 @@
                 <div>
                     <h3 class="font-semibold text-brand-950 dark:text-white">Panduan Sesi Presentasi:</h3>
                     <p class="mt-0.5 text-brand-800 dark:text-brand-300">
-                        File presentasi ini akan Anda tampilkan langsung kepada asesor selama sesi presentasi/wawancara. Gunakan tombol <strong>Mode Layar Penuh</strong> atau <strong>Buka di Tab Baru</strong> untuk menampilkan slide presentasi Anda secara jelas dan profesional.
+                        File presentasi ini akan Anda tampilkan langsung kepada asesor selama sesi presentasi/wawancara. Gunakan tombol <strong>Mode Layar Penuh</strong> untuk menampilkan slide presentasi Anda secara jelas dan profesional.
                     </p>
                 </div>
             </div>
@@ -73,7 +62,7 @@
                 <span class="font-mono text-gray-300">{{ $submission->original_filename }}</span>
                 <span class="text-gray-500">Viewer Presentasi Peserta</span>
             </div>
-            <iframe id="presentation-frame" title="Preview Presentasi Peserta" src="{{ route('peserta-assessment.simulations.presentation.preview', $programSimulation) }}#toolbar=1&navpanes=0" class="h-[80vh] min-h-[640px] w-full bg-white dark:bg-gray-900" allow="fullscreen"></iframe>
+            <x-common.secure-pdf-viewer :url="route('peserta-assessment.simulations.presentation.preview', $programSimulation)" height="h-[80vh] min-h-[400px]" />
         </div>
     </div>
 @else

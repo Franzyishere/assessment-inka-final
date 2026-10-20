@@ -61,43 +61,6 @@ class AssessmentProgram extends Model
             ->update(['status' => 'completed']);
     }
 
-    public static function sendDueInvitations(): int
-    {
-        $programs = static::query()
-            ->whereNull('archived_at')
-            ->where('auto_send_invitations', true)
-            ->whereIn('status', ['draft', 'active'])
-            ->whereNotNull('starts_at')
-            ->where('starts_at', '<=', now()->addMinutes(10))
-            ->whereHas('participants', fn ($q) => $q->where('status', 'assigned'))
-            ->with(['participants' => fn ($q) => $q->where('status', 'assigned')])
-            ->get();
-
-        $service = app(\App\Services\AssessmentInvitationService::class);
-        $totalSent = 0;
-
-        foreach ($programs as $program) {
-            $start = $program->starts_at->copy()->timezone(config('assessment_access.timezone'))->startOfDay();
-            $closeHour = (int) config('assessment_access.close_hour', 17);
-            $closeMinute = (int) config('assessment_access.close_minute', 0);
-            $end = $start->copy()->setTime($closeHour, $closeMinute, 0);
-            if (now()->gte($end)) {
-                continue;
-            }
-
-            foreach ($program->participants as $participant) {
-                try {
-                    if ($service->issue($participant, (int) $program->created_by, automatic: true)) {
-                        $totalSent++;
-                    }
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning('Automatic invitation could not be queued.', ['participant_id' => $participant->id, 'error_type' => $e::class]);
-                }
-            }
-        }
-
-        return $totalSent;
-    }
 
     public function usesSharedSimulationThree(): bool
     {

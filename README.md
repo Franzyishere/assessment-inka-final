@@ -37,32 +37,35 @@ composer run dev
 php artisan test
 ```
 
-## Undangan dan OTP peserta
+## Akses peserta dan pembagian arsip
 
-Peserta tidak lagi masuk dengan password. Admin/Super Admin membuat data peserta (email pribadi diperbolehkan), menambahkan peserta ke program, lalu membuka **Undangan → program → pilih peserta → Kirim**. Asesor dan staf tetap menggunakan login password. Data hasil tetap disimpan untuk staf; peserta hanya mengakses Simulasi Saya pada program yang diundang.
+Pengarsipan memindahkan program dari daftar utama tanpa menghentikan assessment aktif. Admin wajib mengonfirmasi pengarsipan; akses peserta tetap mengikuti jadwal dan status program.
 
-- Tautan berlaku pada tanggal `starts_at` program, pukul 00.00 hingga sebelum 00.00 hari berikutnya, WIB. Ini bukan 24 jam sejak pengiriman. Program lintas hari memerlukan kebijakan tambahan; undangan saat ini hanya berlaku pada hari pertama.
-- Undangan boleh dikirim sebelumnya; permintaan OTP baru tersedia pada hari pelaksanaan. Jadwal simulasi sendiri tetap membatasi waktu mulai/pengerjaan.
-- OTP berlaku maksimal 10 menit, sekali pakai, 5 percobaan, jeda kirim ulang 60 detik. Kode terikat browser yang meminta. Kode disimpan sebagai hash; kode tidak masuk audit/log. OTP hanya dikirim ke email yang cocok dengan undangan.
-- Menerbitkan ulang membatalkan tautan, OTP, dan sesi login sebelumnya. Mencabut undangan, mengubah tanggal program/email peserta, atau menonaktifkan penugasan juga menutup akses. Pemeriksaan berlaku pada setiap request. Login ulang tidak mereset jawaban atau timer simulasi.
-- Satu sesi browser hanya mengakses satu undangan/program. Keluar dulu sebelum membuka undangan program lain.
+- Peserta login melalui halaman login dengan **NIP + kode akses pribadi**, tanpa tautan undangan atau OTP email. Login staf tetap memakai email/password.
+- Kode dibuat otomatis ketika peserta program disimpan, satu kode per peserta/program. Simpan ulang tidak menggantinya. Program lama dapat memakai tombol **Buat Kode** pada **Akses Peserta**.
+- NIP harus diisi dan unik. Admin membagikan kode secara pribadi setelah memeriksa identitas. Kode berlaku sekali login; login ulang setelah logout/perangkat kehilangan sesi memerlukan **Ganti Kode** dari Admin. Jawaban dan timer tidak direset.
+- Kode hanya dapat digunakan saat kepesertaan aktif dan waktu berada di rentang `starts_at <= sekarang < ends_at`. Jadwal belum lengkap, program nonaktif, dan semua simulasi sudah dikumpulkan menolak login baru.
+- Pemeriksaan jadwal, kepesertaan, pencabutan, dan versi kode berlaku pada setiap request. Sesi yang sudah aktif dapat menampilkan presentasi sampai batas program; akses PA saat LGD tetap mengikuti sesi LGD aktif.
+- Kode disimpan terenkripsi dengan APP_KEY agar dapat ditampilkan kepada Admin. Hash digunakan untuk pencarian; kode tidak ditaruh di URL, audit log, JSON model, atau flash input. Jaga APP_KEY dan backup-nya; jangan merekam body login di proxy/APM.
+- Pada **Arsip Program → Hasil**, Admin menentukan satu asesor untuk setiap kombinasi peserta dan simulasi yang telah dikumpulkan. Mengganti/mencabut pembagian mengubah akses langsung. Penugasan operasional tidak otomatis memberi hak membaca/unduh jawaban.
+- Tabel/data undangan dan penilaian lama dipertahankan. Endpoint, service, template, dan scheduler email undangan lama sudah dilepas. Job lama hanya membatalkan pengiriman yang masih antre.
 
-### Aktivasi pengiriman email
+### Setelah deployment
 
-Konfigurasikan `.env` (jangan commit kredensial): `ASSESSMENT_MAILER=smtp`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_SCHEME`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME`, `APP_URL`. Gunakan konfigurasi TLS/port sesuai penyedia SMTP pihak ketiga. Alamat pengirim harus diverifikasi pada penyedia; tidak harus `@inka.co.id`. Domain penerima tidak dibatasi. Transport log/array/failover sengaja ditolak untuk undangan/OTP agar kode tidak bocor ke log atau dianggap terkirim padahal tidak terkirim.
-
-Sebelum produksi: persetujuan IT untuk penyedia pengirim, verifikasi domain SPF/DKIM/DMARC, tes ke email pribadi lalu mailbox INKA, HTTPS, `APP_DEBUG=false`, `SESSION_SECURE_COOKIE=true`, dan redaksi path `/assessment/invitations/*` serta body OTP pada access log/APM/reverse proxy. Jangan log isi email atau OTP. Queue payload undangan dienkripsi memakai APP_KEY; simpan APP_KEY dengan aman.
+Backup database dan APP_KEY, lalu jalankan migrasi sebelum membuka akses baru:
 
 ```bash
-php artisan migrate
+php artisan migrate --force
+php artisan optimize:clear
 php artisan config:cache
 php artisan queue:restart
-php artisan queue:work --tries=1 --timeout=45
+npm ci
+npm run build
 ```
 
-Gunakan `QUEUE_CONNECTION=database` dan worker yang diawasi Supervisor/systemd untuk undangan massal. OTP dikirim langsung dengan batas waktu SMTP agar tidak menunggu antrean. Monitoring membedakan **Dalam antrean**, **Diterima layanan email**, **Gagal dikirim**, dan **Dibatalkan**; diterima layanan bukan bukti tiba di inbox. Webhook delivery/bounce belum diimplementasikan. Jika gagal, perbaiki konfigurasi lalu kirim ulang. Jika worker berhenti, undangan tetap dalam antrean.
+Jangan gunakan `migrate:fresh`. Scheduler tetap diperlukan untuk lifecycle program. Restart worker/scheduler persisten setelah deployment agar tidak menjalankan kode lama. SMTP tidak diperlukan untuk login baru. Sesi peserta lama akan diminta login ulang; terbitkan kode untuk program berjalan dan lengkapi pembagian arsip sebelum digunakan. Uji pergantian ini di staging saat tidak ada assessment berlangsung.
 
-Pengujian otomatis memakai SQLite memory dan mail fake; tidak mengirim email nyata. Perubahan ini memerlukan migrasi sebelum login peserta atau monitoring undangan dipakai. Tidak perlu `migrate:fresh` atau menghapus data lama.
+Tes otomatis memakai SQLite memory, tanpa mengirim email nyata atau mengubah database aplikasi.
 
 ## License Notice
 

@@ -67,10 +67,13 @@ class DashboardController extends Controller
         $programGroups = $assignments->groupBy(fn ($assignment) => $assignment->programSimulation->program?->name ?? 'Program');
         $submittedSessions = $sessions->where('status', 'submitted');
 
-        return $this->dashboard('Dashboard Asesor', 'Pantau pelaksanaan simulasi dan akses jawaban peserta dari program penugasan Anda.', [
+        $archiveCount = SimulationSession::where('status', 'submitted')
+            ->whereHas('archiveGrant', fn ($grant) => $grant->where('assessor_id', $request->user()->id))->count();
+
+        return $this->dashboard('Dashboard Asesor', 'Pantau simulasi yang ditugaskan dan buka arsip hasil yang dibagikan Admin.', [
             ['label' => 'Simulasi Ditugaskan', 'value' => (string) $assignments->count(), 'description' => 'Penugasan aktif dari Admin HCGA'],
             ['label' => 'Peserta Dipantau', 'value' => (string) $sessions->pluck('assessment_participant_id')->unique()->count(), 'description' => 'Peserta yang sudah memulai simulasi'],
-            ['label' => 'Jawaban Dikumpulkan', 'value' => (string) $submittedSessions->count(), 'description' => 'Tersedia melalui menu Hasil Assessment'],
+            ['label' => 'Arsip Dibagikan', 'value' => (string) $archiveCount, 'description' => 'Tersedia melalui menu Hasil Assessment'],
         ], [
             $this->barChart('Submission per Program', 'Jawaban peserta yang telah dikumpulkan', $programGroups->keys()->all(), $programGroups->map(fn ($items) => $items->pluck('programSimulation.sessions')->flatten()->where('status', 'submitted')->count())->values()->all(), 'Submission'),
             $this->donutChart('Status Sesi Peserta', 'Ringkasan sesi yang sudah dimulai', ['Dikumpulkan', 'Belum Dikumpulkan'], [$submittedSessions->count(), $sessions->count() - $submittedSessions->count()]),

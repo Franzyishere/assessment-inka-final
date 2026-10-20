@@ -55,15 +55,10 @@
     </section>
 
     <section class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
-        <h3 class="text-sm font-semibold text-gray-800 dark:text-white/90">Undangan Peserta</h3>
+        <h3 class="text-sm font-semibold text-gray-800 dark:text-white/90">Kode Akses Peserta</h3>
         <p class="mt-1 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
-            @if ($program->archived_at)
-                Program telah diarsipkan. Pengiriman undangan otomatis tidak berjalan.
-            @elseif ($program->auto_send_invitations)
-                Undangan diproses otomatis mulai <strong>10 menit sebelum jadwal pelaksanaan</strong>. Peserta yang ditambahkan setelah waktu tersebut akan diproses selama akses masih berlaku. Pantau status pengiriman di menu Undangan.
-            @else
-                Program lama ini menggunakan pengiriman manual. Kirim undangan melalui menu Undangan setelah data peserta dan jadwal diperiksa.
-            @endif
+            Kode pribadi dibuat otomatis saat peserta disimpan. Bagikan melalui menu Akses Peserta.
+            Login menggunakan NIP hanya tersedia selama jadwal program. Menyimpan ulang pengaturan tidak mengganti kode yang sudah ada.
         </p>
     </section>
 
